@@ -6,16 +6,15 @@ import base64
 import binascii
 import json
 import mimetypes
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 from urllib import error, parse, request
 
+from .config import load_api_key, load_seed_section
 
 DEFAULT_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3/responses"
 DEFAULT_MODEL_NAME = "doubao-seed-2-0-pro-260215"
-DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[3] / "config" / "seed.json"
 DEFAULT_IMAGE_MIME_TYPE = "image/jpeg"
 
 
@@ -28,19 +27,22 @@ class SeedLLMClient:
     """字节 Seed 大模型客户端。"""
 
     api_key: str | None = None
-    model_name: str = DEFAULT_MODEL_NAME
+    model_name: str | None = None
     base_url: str = DEFAULT_BASE_URL
-    timeout: int = 60
+    timeout: int | None = None
     config_path: str | Path | None = None
+    params_config_path: str | Path | None = None
     default_image_mime_type: str = DEFAULT_IMAGE_MIME_TYPE
+    default_request_options: dict[str, Any] | None = None
     default_headers: dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        self._apply_config_defaults()
         if self.api_key is None:
-            self.api_key = self._load_api_key()
+            self.api_key = load_api_key(self.config_path)
         if not self.api_key:
             raise SeedAPIError(
-                "缺少 API Key，请先设置 ARK_API_KEY，或在 config/seed.json 中配置 api_key。"
+                "缺少 API Key，请先设置 ARK_API_KEY，或在 config/seed_key.json 中配置 api_key。"
             )
 
     def generate_response(
@@ -52,10 +54,12 @@ class SeedLLMClient:
     ) -> dict[str, Any]:
         """基于消息列表生成原始响应。"""
 
+        request_options = dict(self.default_request_options or {})
+        request_options.update(extra_body)
         request_payload = self._build_messages_payload(
             messages=messages,
             model_name=model_name or self.model_name,
-            extra_body=extra_body,
+            extra_body=request_options,
         )
         return self._post_json(request_payload)
 
@@ -328,26 +332,21 @@ class SeedLLMClient:
     def _is_data_uri(value: str) -> bool:
         return value.startswith("data:image/") and ";base64," in value
 
-    def _load_api_key(self) -> str | None:
-        env_api_key = os.getenv("ARK_API_KEY")
-        if env_api_key:
-            return env_api_key
-
-        config_path = Path(self.config_path) if self.config_path else DEFAULT_CONFIG_PATH
-        if not config_path.exists():
-            return None
-
+    def _apply_config_defaults(self) -> None:
         try:
-            config = json.loads(config_path.read_text(encoding="utf-8"))
-        except OSError as exc:
-            raise SeedAPIError(f"读取配置文件失败: {config_path}") from exc
-        except json.JSONDecodeError as exc:
-            raise SeedAPIError(f"配置文件不是合法 JSON: {config_path}") from exc
+            config = load_seed_section("llm", self.params_config_path)
+        except Exception as exc:
+            raise SeedAPIError(str(exc)) from exc
 
-        api_key = config.get("api_key")
-        if isinstance(api_key, str) and api_key.strip():
-            return api_key.strip()
-        return None
+        if self.model_name is None:
+            self.model_name = str(config.get("model_name") or DEFAULT_MODEL_NAME)
+        if self.timeout is None:
+            self.timeout = int(config.get("timeout") or 60)
+        if self.default_request_options is None:
+            default_request_options = config.get("default_request_options", {})
+            if not isinstance(default_request_options, dict):
+                raise SeedAPIError("llm.default_request_options 配置必须为对象。")
+            self.default_request_options = default_request_options
 
     def _post_json(self, request_payload: dict[str, Any]) -> dict[str, Any]:
         request_headers = {

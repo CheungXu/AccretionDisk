@@ -1,0 +1,36 @@
+{
+  "llm": {
+    "model_name": "doubao-seed-2-0-pro-260215",
+    "timeout": 60,
+    "default_request_options": {
+      "temperature": 0.7,
+      "top_p": 0.95
+    }
+  },
+  "image": {
+    "model_name": "doubao-seedream-5-0-260128",
+    "timeout": 300,
+    "response_format": "url",
+    "size": "2K",
+    "stream": null,
+    "watermark": true,
+    "sequential_image_generation": null,
+    "strict_image_count": true,
+    "retry_on_partial": true,
+    "max_partial_retries": 3
+  },
+  "video": {
+    "model_name": "doubao-seedance-1-5-pro-251215",
+    "timeout": 300,
+    "task_type": "i2v",
+    "image_role": "first_frame",
+    "poll_interval_seconds": 5,
+    "wait_timeout_seconds": 900,
+    "default_prompt_options": {
+      "duration": 5,
+      "camerafixed": false,
+      "watermark": true
+    },
+    "default_request_options": {}
+  }
+}

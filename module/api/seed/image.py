@@ -6,17 +6,18 @@ import base64
 import binascii
 import json
 import mimetypes
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 from urllib import error, parse, request
 
+from .config import load_api_key, load_seed_section
+
 
 DEFAULT_IMAGE_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3/images/generations"
 DEFAULT_IMAGE_MODEL_NAME = "doubao-seedream-5-0-260128"
-DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[3] / "config" / "seed.json"
 DEFAULT_IMAGE_MIME_TYPE = "image/jpeg"
+DEFAULT_DOWNLOAD_PREFIX = "seed_image"
 
 
 class SeedImageAPIError(RuntimeError):
@@ -28,19 +29,30 @@ class SeedImageClient:
     """字节 Seed 生图客户端。"""
 
     api_key: str | None = None
-    model_name: str = DEFAULT_IMAGE_MODEL_NAME
+    model_name: str | None = None
     base_url: str = DEFAULT_IMAGE_BASE_URL
-    timeout: int = 300
+    timeout: int | None = None
     config_path: str | Path | None = None
+    params_config_path: str | Path | None = None
     default_image_mime_type: str = DEFAULT_IMAGE_MIME_TYPE
+    default_download_prefix: str = DEFAULT_DOWNLOAD_PREFIX
+    response_format: str | None = None
+    size: str | None = None
+    stream: bool | None = None
+    watermark: bool | None = None
+    sequential_image_generation: str | None = None
+    strict_image_count: bool | None = None
+    retry_on_partial: bool | None = None
+    max_partial_retries: int | None = None
     default_headers: dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        self._apply_config_defaults()
         if self.api_key is None:
-            self.api_key = self._load_api_key()
+            self.api_key = load_api_key(self.config_path)
         if not self.api_key:
             raise SeedImageAPIError(
-                "缺少 API Key，请先设置 ARK_API_KEY，或在 config/seed.json 中配置 api_key。"
+                "缺少 API Key，请先设置 ARK_API_KEY，或在 config/seed_key.json 中配置 api_key。"
             )
 
     def generate(
@@ -50,25 +62,35 @@ class SeedImageClient:
         reference_images: list[str | dict[str, str]] | None = None,
         image_count: int = 1,
         model_name: str | None = None,
-        response_format: str = "url",
-        size: str = "2K",
+        response_format: str | None = None,
+        size: str | None = None,
         stream: bool | None = None,
-        watermark: bool = True,
+        watermark: bool | None = None,
         sequential_image_generation: str | None = None,
         **extra_body: Any,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """统一生图入口，支持文生图与图生图。"""
+
+        resolved_response_format = response_format or self.response_format or "url"
+        resolved_size = size or self.size or "2K"
+        resolved_stream = self.stream if stream is None else stream
+        resolved_watermark = self.watermark if watermark is None else watermark
+        resolved_sequential_image_generation = (
+            self.sequential_image_generation
+            if sequential_image_generation is None
+            else sequential_image_generation
+        )
 
         request_payload = self._build_request_payload(
             prompt=prompt,
             reference_images=reference_images,
             image_count=image_count,
             model_name=model_name or self.model_name,
-            response_format=response_format,
-            size=size,
-            stream=stream,
-            watermark=watermark,
-            sequential_image_generation=sequential_image_generation,
+            response_format=resolved_response_format,
+            size=resolved_size,
+            stream=resolved_stream,
+            watermark=bool(resolved_watermark),
+            sequential_image_generation=resolved_sequential_image_generation,
             extra_body=extra_body,
         )
         return self._post_json(request_payload)
@@ -80,28 +102,78 @@ class SeedImageClient:
         reference_images: list[str | dict[str, str]] | None = None,
         image_count: int = 1,
         model_name: str | None = None,
-        response_format: str = "url",
-        size: str = "2K",
+        response_format: str | None = None,
+        size: str | None = None,
         stream: bool | None = None,
-        watermark: bool = True,
+        watermark: bool | None = None,
         sequential_image_generation: str | None = None,
+        strict_image_count: bool | None = None,
+        retry_on_partial: bool | None = None,
+        max_partial_retries: int | None = None,
         **extra_body: Any,
     ) -> list[str]:
-        """生成图片并提取图片 URL 列表。"""
+        """生成图片并提取图片 URL 列表。组图不足时可按差值自动重试。"""
 
-        response = self.generate(
-            prompt=prompt,
-            reference_images=reference_images,
-            image_count=image_count,
-            model_name=model_name,
-            response_format=response_format,
-            size=size,
-            stream=stream,
-            watermark=watermark,
-            sequential_image_generation=sequential_image_generation,
-            **extra_body,
-        )
-        return self.extract_image_urls(response)
+        if strict_image_count is None:
+            strict_image_count = self.strict_image_count
+        if retry_on_partial is None:
+            retry_on_partial = self.retry_on_partial
+        if max_partial_retries is None:
+            max_partial_retries = self.max_partial_retries
+
+        if max_partial_retries < 0:
+            raise SeedImageAPIError("max_partial_retries 不能小于 0。")
+
+        collected_image_urls: list[str] = []
+        seen_urls: set[str] = set()
+        remaining_image_count = image_count
+        attempt_count = 0
+
+        while remaining_image_count > 0:
+            attempt_count += 1
+            response = self.generate(
+                prompt=prompt,
+                reference_images=reference_images,
+                image_count=remaining_image_count,
+                model_name=model_name,
+                response_format=response_format,
+                size=size,
+                stream=stream,
+                watermark=watermark,
+                sequential_image_generation=sequential_image_generation,
+                **extra_body,
+            )
+            batch_image_urls = self.extract_image_urls(response)
+            for image_url in batch_image_urls:
+                if image_url not in seen_urls:
+                    seen_urls.add(image_url)
+                    collected_image_urls.append(image_url)
+
+            remaining_image_count = max(image_count - len(collected_image_urls), 0)
+            if remaining_image_count == 0:
+                return collected_image_urls
+
+            actual_batch_count = self._extract_generated_image_count(response) or len(
+                batch_image_urls
+            )
+            used_retry_count = attempt_count - 1
+            can_retry = (
+                retry_on_partial
+                and image_count > 1
+                and actual_batch_count > 0
+                and used_retry_count < max_partial_retries
+            )
+            if can_retry:
+                continue
+
+            self._validate_generated_image_count(
+                expected_image_count=image_count,
+                actual_image_count=len(collected_image_urls),
+                strict_image_count=strict_image_count,
+            )
+            return collected_image_urls
+
+        return collected_image_urls
 
     def generate_single_image_url(
         self,
@@ -109,9 +181,12 @@ class SeedImageClient:
         *,
         reference_images: list[str | dict[str, str]] | None = None,
         model_name: str | None = None,
-        response_format: str = "url",
-        size: str = "2K",
-        watermark: bool = True,
+        response_format: str | None = None,
+        size: str | None = None,
+        watermark: bool | None = None,
+        strict_image_count: bool | None = None,
+        retry_on_partial: bool | None = None,
+        max_partial_retries: int | None = None,
         **extra_body: Any,
     ) -> str:
         """生成单张图片并返回唯一 URL。"""
@@ -126,11 +201,133 @@ class SeedImageClient:
             stream=False,
             watermark=watermark,
             sequential_image_generation="disabled",
+            strict_image_count=strict_image_count,
+            retry_on_partial=retry_on_partial,
+            max_partial_retries=max_partial_retries,
             **extra_body,
         )
         if len(image_urls) != 1:
             raise SeedImageAPIError(f"预期返回 1 张图片，实际得到 {len(image_urls)} 张。")
         return image_urls[0]
+
+    def save_images(
+        self,
+        image_urls: list[str],
+        output_dir: str | Path,
+        *,
+        file_name_prefix: str | None = None,
+        file_names: list[str] | None = None,
+    ) -> list[Path]:
+        """将图片 URL 下载到本地目录。"""
+
+        if not image_urls:
+            raise SeedImageAPIError("image_urls 不能为空。")
+
+        save_dir = Path(output_dir).expanduser()
+        save_dir.mkdir(parents=True, exist_ok=True)
+
+        if file_names is not None and len(file_names) != len(image_urls):
+            raise SeedImageAPIError("file_names 数量必须与 image_urls 数量一致。")
+
+        resolved_prefix = file_name_prefix or self.default_download_prefix
+        saved_paths: list[Path] = []
+        for index, image_url in enumerate(image_urls, start=1):
+            custom_file_name = file_names[index - 1] if file_names else None
+            saved_paths.append(
+                self._download_image(
+                    image_url=image_url,
+                    output_dir=save_dir,
+                    index=index,
+                    file_name_prefix=resolved_prefix,
+                    file_name=custom_file_name,
+                )
+            )
+        return saved_paths
+
+    def generate_and_save(
+        self,
+        prompt: str,
+        output_dir: str | Path,
+        *,
+        reference_images: list[str | dict[str, str]] | None = None,
+        image_count: int = 1,
+        model_name: str | None = None,
+        response_format: str | None = None,
+        size: str | None = None,
+        stream: bool | None = None,
+        watermark: bool | None = None,
+        sequential_image_generation: str | None = None,
+        file_name_prefix: str | None = None,
+        file_names: list[str] | None = None,
+        strict_image_count: bool | None = None,
+        retry_on_partial: bool | None = None,
+        max_partial_retries: int | None = None,
+        **extra_body: Any,
+    ) -> list[Path]:
+        """生成图片并保存到本地目录。"""
+
+        image_urls = self.generate_image_urls(
+            prompt=prompt,
+            reference_images=reference_images,
+            image_count=image_count,
+            model_name=model_name,
+            response_format=response_format,
+            size=size,
+            stream=stream,
+            watermark=watermark,
+            sequential_image_generation=sequential_image_generation,
+            strict_image_count=strict_image_count,
+            retry_on_partial=retry_on_partial,
+            max_partial_retries=max_partial_retries,
+            **extra_body,
+        )
+        return self.save_images(
+            image_urls=image_urls,
+            output_dir=output_dir,
+            file_name_prefix=file_name_prefix,
+            file_names=file_names,
+        )
+
+    def generate_and_save_single(
+        self,
+        prompt: str,
+        output_dir: str | Path,
+        *,
+        reference_images: list[str | dict[str, str]] | None = None,
+        model_name: str | None = None,
+        response_format: str | None = None,
+        size: str | None = None,
+        watermark: bool | None = None,
+        file_name: str | None = None,
+        file_name_prefix: str | None = None,
+        strict_image_count: bool | None = None,
+        retry_on_partial: bool | None = None,
+        max_partial_retries: int | None = None,
+        **extra_body: Any,
+    ) -> Path:
+        """生成单张图片并保存到本地。"""
+
+        saved_paths = self.generate_and_save(
+            prompt=prompt,
+            output_dir=output_dir,
+            reference_images=reference_images,
+            image_count=1,
+            model_name=model_name,
+            response_format=response_format,
+            size=size,
+            stream=False,
+            watermark=watermark,
+            sequential_image_generation="disabled",
+            file_name_prefix=file_name_prefix,
+            file_names=[file_name] if file_name else None,
+            strict_image_count=strict_image_count,
+            retry_on_partial=retry_on_partial,
+            max_partial_retries=max_partial_retries,
+            **extra_body,
+        )
+        if len(saved_paths) != 1:
+            raise SeedImageAPIError(f"预期保存 1 张图片，实际保存 {len(saved_paths)} 张。")
+        return saved_paths[0]
 
     @staticmethod
     def extract_image_urls(response: dict[str, Any] | list[dict[str, Any]]) -> list[str]:
@@ -159,6 +356,96 @@ class SeedImageClient:
             return image_urls
 
         raise SeedImageAPIError("接口返回成功，但未能提取到图片 URL。")
+
+    def _validate_generated_image_count(
+        self,
+        *,
+        expected_image_count: int,
+        actual_image_count: int,
+        strict_image_count: bool,
+    ) -> None:
+        if not strict_image_count:
+            return
+
+        if actual_image_count < expected_image_count:
+            raise SeedImageAPIError(
+                f"预期生成 {expected_image_count} 张图片，接口实际仅返回 {actual_image_count} 张。"
+                "这通常表示上游任务部分成功，可尝试优化提示词，或增大 max_partial_retries 后重试。"
+            )
+
+    def _download_image(
+        self,
+        *,
+        image_url: str,
+        output_dir: Path,
+        index: int,
+        file_name_prefix: str,
+        file_name: str | None,
+    ) -> Path:
+        if not image_url.strip():
+            raise SeedImageAPIError("待下载图片 URL 不能为空。")
+
+        download_request = request.Request(
+            url=image_url,
+            headers={"User-Agent": "SeedImageClient/1.0"},
+            method="GET",
+        )
+
+        try:
+            with request.urlopen(download_request, timeout=self.timeout) as response:
+                image_bytes = response.read()
+                content_type = response.headers.get("Content-Type", "")
+        except error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            raise SeedImageAPIError(f"下载图片失败，HTTP {exc.code}: {detail}") from exc
+        except error.URLError as exc:
+            raise SeedImageAPIError(f"下载图片网络异常: {exc}") from exc
+
+        suffix = self._resolve_file_suffix(
+            image_url=image_url,
+            image_bytes=image_bytes,
+            content_type=content_type,
+            file_name=file_name,
+        )
+        target_file_name = file_name or f"{file_name_prefix}_{index:02d}{suffix}"
+        target_path = output_dir / target_file_name
+
+        try:
+            target_path.write_bytes(image_bytes)
+        except OSError as exc:
+            raise SeedImageAPIError(f"写入图片文件失败: {target_path}") from exc
+
+        return target_path
+
+    def _resolve_file_suffix(
+        self,
+        *,
+        image_url: str,
+        image_bytes: bytes,
+        content_type: str,
+        file_name: str | None,
+    ) -> str:
+        if file_name:
+            suffix = Path(file_name).suffix
+            if suffix:
+                return suffix
+
+        mime_type = content_type.split(";", 1)[0].strip() if content_type else ""
+        if mime_type.startswith("image/"):
+            guessed_suffix = mimetypes.guess_extension(mime_type)
+            if guessed_suffix:
+                return guessed_suffix
+
+        inferred_mime_type = self._infer_mime_type(image_bytes)
+        guessed_suffix = mimetypes.guess_extension(inferred_mime_type)
+        if guessed_suffix:
+            return guessed_suffix
+
+        url_suffix = Path(parse.urlparse(image_url).path).suffix
+        if url_suffix:
+            return url_suffix
+
+        return ".png"
 
     def _build_request_payload(
         self,
@@ -218,6 +505,33 @@ class SeedImageClient:
 
         request_payload.update(extra_body)
         return request_payload
+
+    def _extract_generated_image_count(
+        self,
+        response: dict[str, Any] | list[dict[str, Any]],
+    ) -> int | None:
+        if isinstance(response, dict):
+            usage = response.get("usage")
+            if isinstance(usage, dict):
+                generated_images = usage.get("generated_images")
+                if isinstance(generated_images, int):
+                    return generated_images
+
+        if isinstance(response, list):
+            for event in response:
+                if not isinstance(event, dict):
+                    continue
+                data = event.get("data")
+                if not isinstance(data, dict):
+                    continue
+                usage = data.get("usage")
+                if not isinstance(usage, dict):
+                    continue
+                generated_images = usage.get("generated_images")
+                if isinstance(generated_images, int):
+                    return generated_images
+
+        return None
 
     def _normalize_reference_images(
         self,
@@ -339,26 +653,29 @@ class SeedImageClient:
     def _is_data_uri(value: str) -> bool:
         return value.startswith("data:image/") and ";base64," in value
 
-    def _load_api_key(self) -> str | None:
-        env_api_key = os.getenv("ARK_API_KEY")
-        if env_api_key:
-            return env_api_key
-
-        config_path = Path(self.config_path) if self.config_path else DEFAULT_CONFIG_PATH
-        if not config_path.exists():
-            return None
-
+    def _apply_config_defaults(self) -> None:
         try:
-            config = json.loads(config_path.read_text(encoding="utf-8"))
-        except OSError as exc:
-            raise SeedImageAPIError(f"读取配置文件失败: {config_path}") from exc
-        except json.JSONDecodeError as exc:
-            raise SeedImageAPIError(f"配置文件不是合法 JSON: {config_path}") from exc
+            config = load_seed_section("image", self.params_config_path)
+        except Exception as exc:
+            raise SeedImageAPIError(str(exc)) from exc
 
-        api_key = config.get("api_key")
-        if isinstance(api_key, str) and api_key.strip():
-            return api_key.strip()
-        return None
+        self.model_name = self.model_name or str(config.get("model_name") or DEFAULT_IMAGE_MODEL_NAME)
+        if self.timeout is None:
+            self.timeout = int(config.get("timeout") or 300)
+        self.response_format = self.response_format or str(config.get("response_format") or "url")
+        self.size = self.size or str(config.get("size") or "2K")
+        if self.stream is None:
+            self.stream = config.get("stream")
+        if self.watermark is None:
+            self.watermark = bool(config.get("watermark", True))
+        if self.sequential_image_generation is None:
+            self.sequential_image_generation = config.get("sequential_image_generation")
+        if self.strict_image_count is None:
+            self.strict_image_count = bool(config.get("strict_image_count", True))
+        if self.retry_on_partial is None:
+            self.retry_on_partial = bool(config.get("retry_on_partial", True))
+        if self.max_partial_retries is None:
+            self.max_partial_retries = int(config.get("max_partial_retries", 3))
 
     def _post_json(self, request_payload: dict[str, Any]) -> dict[str, Any] | list[dict[str, Any]]:
         request_headers = {
