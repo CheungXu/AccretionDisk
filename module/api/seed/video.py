@@ -44,6 +44,7 @@ class SeedVideoClient:
     default_download_prefix: str = DEFAULT_DOWNLOAD_PREFIX
     default_task_type: str | None = None
     default_image_role: str | None = None
+    generate_audio: bool | None = None
     default_prompt_options: dict[str, Any] | None = None
     poll_interval_seconds: int | None = None
     wait_timeout_seconds: int | None = None
@@ -69,6 +70,8 @@ class SeedVideoClient:
         """创建视频生成任务。"""
 
         request_options = dict(self.default_request_options or {})
+        if self.generate_audio is not None and "generate_audio" not in request_options:
+            request_options["generate_audio"] = self.generate_audio
         request_options.update(extra_body)
         request_payload = self._build_task_payload(
             content=content,
@@ -705,6 +708,9 @@ class SeedVideoClient:
             self.timeout = int(config.get("timeout") or 300)
         self.default_task_type = self.default_task_type or str(config.get("task_type") or "i2v")
         self.default_image_role = self.default_image_role or str(config.get("image_role") or "first_frame")
+        if self.generate_audio is None:
+            configured_generate_audio = config.get("generate_audio")
+            self.generate_audio = True if configured_generate_audio is None else bool(configured_generate_audio)
         if self.poll_interval_seconds is None:
             self.poll_interval_seconds = int(
                 config.get("poll_interval_seconds") or DEFAULT_POLL_INTERVAL_SECONDS

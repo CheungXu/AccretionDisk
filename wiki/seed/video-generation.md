@@ -76,4 +76,5 @@
 - 模型默认参数从 `config/seed_config.json` 读取
 - API Key 从环境变量或 `config/seed_key.json` 读取
 - 图生视频默认走 `first_frame + i2v`
+- `generate_audio` 可通过配置或调用参数控制有声/无声输出
 - 任务完成后支持直接下载到本地

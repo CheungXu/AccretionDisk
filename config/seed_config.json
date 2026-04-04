@@ -24,6 +24,7 @@
     "timeout": 300,
     "task_type": "i2v",
     "image_role": "first_frame",
+    "generate_audio": true,
     "poll_interval_seconds": 5,
     "wait_timeout_seconds": 900,
     "default_prompt_options": {

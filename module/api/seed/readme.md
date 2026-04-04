@@ -61,6 +61,7 @@
     "model_name": "doubao-seedance-1-5-pro-251215",
     "task_type": "i2v",
     "image_role": "first_frame",
+    "generate_audio": true,
     "default_prompt_options": {
       "duration": 5,
       "camerafixed": false,
@@ -251,9 +252,16 @@ image_urls = client.generate_image_urls(
 - `model_name`
 - `task_type`
 - `image_role`
+- `generate_audio`
 - `poll_interval_seconds`
 - `wait_timeout_seconds`
 - `default_prompt_options`
+
+其中：
+
+- `generate_audio=true`：默认生成有声视频
+- `generate_audio=false`：默认生成无声视频
+- 调用时显式传入 `generate_audio` 会覆盖配置文件默认值
 
 ### 推荐调用方式
 
