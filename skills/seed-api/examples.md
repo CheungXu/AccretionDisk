@@ -56,6 +56,10 @@ client = SeedVideoClient()
 saved_paths = client.create_image_to_video_and_save(
     prompt="无人机高速穿越峡谷，带来沉浸式飞行体验",
     image_input="https://example.com/demo.png",
+    reference_images=[
+        "https://example.com/style_reference.png",
+        "https://example.com/scene_reference.png",
+    ],
     output_dir="tmp/seed_video_output",
 )
 print(saved_paths)

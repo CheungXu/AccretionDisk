@@ -110,6 +110,7 @@ class SeedVideoClient:
         prompt: str,
         image_input: str | dict[str, str],
         *,
+        reference_images: list[str | dict[str, str]] | None = None,
         image_role: str | None = None,
         prompt_options: dict[str, Any] | None = None,
         model_name: str | None = None,
@@ -117,7 +118,9 @@ class SeedVideoClient:
     ) -> dict[str, Any]:
         """创建图生视频任务。"""
 
-        normalized_image_url = self._normalize_image_input(image_input)
+        if reference_images is not None and not isinstance(reference_images, list):
+            raise SeedVideoAPIError("reference_images 必须为列表。")
+
         content = [
             {
                 "type": "text",
@@ -126,12 +129,20 @@ class SeedVideoClient:
                     prompt_options=self._merge_prompt_options(prompt_options),
                 ),
             },
-            {
-                "type": "image_url",
-                "image_url": {"url": normalized_image_url},
-                "role": image_role or self.default_image_role,
-            },
         ]
+        content.extend(
+            self._build_image_content_items(
+                image_inputs=[image_input],
+                default_role=image_role or self.default_image_role,
+            )
+        )
+        if reference_images:
+            content.extend(
+                self._build_image_content_items(
+                    image_inputs=reference_images,
+                    default_role="reference_image",
+                )
+            )
         return self.create_task(
             content=content,
             model_name=model_name,
@@ -219,6 +230,7 @@ class SeedVideoClient:
         prompt: str,
         image_input: str | dict[str, str],
         *,
+        reference_images: list[str | dict[str, str]] | None = None,
         image_role: str | None = None,
         prompt_options: dict[str, Any] | None = None,
         model_name: str | None = None,
@@ -231,6 +243,7 @@ class SeedVideoClient:
         task_response = self.create_image_to_video_task(
             prompt=prompt,
             image_input=image_input,
+            reference_images=reference_images,
             image_role=image_role,
             prompt_options=prompt_options,
             model_name=model_name,
@@ -301,6 +314,7 @@ class SeedVideoClient:
         image_input: str | dict[str, str],
         output_dir: str | Path,
         *,
+        reference_images: list[str | dict[str, str]] | None = None,
         image_role: str | None = None,
         prompt_options: dict[str, Any] | None = None,
         model_name: str | None = None,
@@ -315,6 +329,7 @@ class SeedVideoClient:
         final_response = self.create_image_to_video_and_wait(
             prompt=prompt,
             image_input=image_input,
+            reference_images=reference_images,
             image_role=image_role,
             prompt_options=prompt_options,
             model_name=model_name,
@@ -546,6 +561,29 @@ class SeedVideoClient:
             }
 
         raise SeedVideoAPIError(f"不支持的内容类型: {content_type}")
+
+    def _build_image_content_items(
+        self,
+        image_inputs: list[str | dict[str, str]],
+        *,
+        default_role: str,
+    ) -> list[dict[str, Any]]:
+        normalized_content: list[dict[str, Any]] = []
+        for image_input in image_inputs:
+            if isinstance(image_input, dict):
+                image_role = str(image_input.get("role") or default_role)
+                normalized_image_url = self._normalize_image_dict(image_input)
+            else:
+                image_role = default_role
+                normalized_image_url = self._normalize_image_input(image_input)
+            normalized_content.append(
+                {
+                    "type": "image_url",
+                    "image_url": {"url": normalized_image_url},
+                    "role": image_role,
+                }
+            )
+        return normalized_content
 
     def _build_prompt_text(
         self,

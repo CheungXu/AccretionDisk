@@ -247,6 +247,26 @@ image_urls = client.generate_image_urls(
 
 这样可以避免部分模型把任务误判为 `r2v`。
 
+当前图生视频接口支持：
+
+- `image_input`：主图，默认按 `first_frame` 处理
+- `reference_images`：额外参考图列表，默认按 `reference_image` 处理
+
+对齐官方文档后，补充约定如下：
+
+- 单主图图生视频时，官方要求传入 `1` 个 `image_url`，其 `role` 为 `first_frame` 或不填
+- 多参考图场景下，每张额外参考图的 `role` 应为 `reference_image`
+- 官方推荐在提示词中使用 `"[图1]...，[图2]..."` 的方式绑定多张参考图，指令遵循效果通常更好
+- `generate_audio` 为官方参数，类型为 `boolean`，默认值为 `true`
+- `generate_audio` 的官方支持范围包含 `Seedance 2.0`、`Seedance 2.0 fast`、`Seedance 1.5 Pro`
+- 多参考图的官方支持范围主要为 `Seedance 2.0`、`Seedance 2.0 fast`（`1~9` 张）以及 `Seedance 1.0 lite i2v`（`1~4` 张）
+
+注意：
+
+- 当前项目默认视频模型仍为 `doubao-seedance-1-5-pro-251215`
+- 因此“多参考图接口已封装”不等于“当前默认模型已被官方明确列入多参考图支持范围”
+- 若业务强依赖多参考图效果，建议优先切换到官方明确支持的模型后再做正式验证
+
 视频相关默认值同样从 `config/seed_config.json` 的 `video` 分组读取，包括：
 
 - `model_name`
@@ -272,8 +292,12 @@ from module.api.seed import SeedVideoClient
 
 client = SeedVideoClient()
 task = client.create_image_to_video_task(
-    prompt="无人机高速穿越峡谷，带来沉浸式飞行体验",
+    prompt="[图1]作为主体角色，[图2]作为风格参考，[图3]作为场景参考，生成无人机高速穿越峡谷的电影感视频",
     image_input="https://example.com/demo.png",
+    reference_images=[
+        "https://example.com/style_1.png",
+        "https://example.com/style_2.png",
+    ],
     prompt_options={
         "duration": 5,
         "camerafixed": False,
