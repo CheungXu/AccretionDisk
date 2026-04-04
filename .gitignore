@@ -1,3 +1,4 @@
+.DS_Store
 config/seed_key.json
 tmp/seed_runtime_tests/
 tmp/seed_video_runtime_tests/
