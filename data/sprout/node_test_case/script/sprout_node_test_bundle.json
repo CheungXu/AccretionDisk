@@ -1,0 +1,879 @@
+{
+  "project_id": "sprout_node_test_bundle",
+  "project_name": "sprout_node_test",
+  "topic_input": {
+    "topic": "比较火的赘婿题材古风短剧",
+    "duration_seconds": 60,
+    "shot_count": 10,
+    "orientation": "9:16",
+    "visual_style": "国漫古风条漫，厚涂，高对比，高张力",
+    "target_audience": null,
+    "notes": null
+  },
+  "episode": {
+    "episode_id": "sprout_node_test_episode_01",
+    "title": "废婿亮身份：寿宴当场碾压全场",
+    "logline": "入赘苏家三年的窝囊废婿林辰，在岳母寿宴被当众羞辱驱逐时，亮出隐藏的当朝异姓王身份，当场打脸所有欺辱过他的人",
+    "core_hook": "极致身份反差，前一秒被踩在泥里的废婿，下一秒是权倾朝野的王爷，全程爽点密集无尿点",
+    "total_duration_seconds": 60,
+    "target_shot_count": 10,
+    "visual_style": "国漫古风条漫风格，厚涂质感，高对比明暗光影，人物情绪张力拉满，适配9:16竖屏画幅"
+  },
+  "characters": [
+    {
+      "character_id": "林辰",
+      "name": "林辰",
+      "role": "男主，赘婿/隐姓埋名的当朝异姓王",
+      "summary": "为报苏家当年救命之恩，隐去王爷身份入赘苏家，隐忍三年受尽欺辱",
+      "personality": "外柔内刚，隐忍腹黑，杀伐果断，对妻子极其温柔",
+      "appearance": "日常赘婿状态穿洗发白的青布长衫，束普通木簪，眉眼低垂气质怯懦；亮身份时穿玄色绣金线麒麟暗纹朝服，鎏金冠束发，剑眉星目气场凛冽",
+      "appearance_prompt": "国漫厚涂古风男性，两种状态：1.赘婿状态：洗旧青布长衫，木簪束发，眉眼低垂，面容清俊，气质怯懦畏缩，高对比光影；2.异姓王状态：玄色绣麒麟金线朝服，鎏金冠，剑眉星目，周身威压感十足，高对比光影，9:16竖屏",
+      "voice_style": "赘婿状态声音低微唯诺，亮身份时低沉冷冽自带威压，对妻子时语气柔和",
+      "notes": null,
+      "reference_assets": [
+        {
+          "asset_id": "林辰_anchor",
+          "asset_type": "character_anchor",
+          "source": "seed_image",
+          "path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/林辰/林辰_anchor_01.jpg",
+          "url": null,
+          "role": "anchor",
+          "prompt": "角色名：林辰；角色定位：男主，赘婿/隐姓埋名的当朝异姓王；人物简介：为报苏家当年救命之恩，隐去王爷身份入赘苏家，隐忍三年受尽欺辱；外形描述：日常赘婿状态穿洗发白的青布长衫，束普通木簪，眉眼低垂气质怯懦；亮身份时穿玄色绣金线麒麟暗纹朝服，鎏金冠束发，剑眉星目气场凛冽；性格关键词：外柔内刚，隐忍腹黑，杀伐果断，对妻子极其温柔；视觉风格：国漫古风条漫风格，厚涂质感，高对比明暗光影，人物情绪张力拉满，适配9:16竖屏画幅；请输出适合后续视频绑定的单人角色定妆图，服装、气质与身份明确，人物完整，便于后续复用。",
+          "owner_id": "林辰",
+          "metadata": {
+            "character_name": "林辰"
+          }
+        },
+        {
+          "asset_id": "林辰_ref_01",
+          "asset_type": "character_reference",
+          "source": "seed_image",
+          "path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/林辰/林辰_ref_01.jpg",
+          "url": null,
+          "role": "reference_image",
+          "prompt": "角色名：林辰；角色定位：男主，赘婿/隐姓埋名的当朝异姓王；人物简介：为报苏家当年救命之恩，隐去王爷身份入赘苏家，隐忍三年受尽欺辱；外形描述：日常赘婿状态穿洗发白的青布长衫，束普通木簪，眉眼低垂气质怯懦；亮身份时穿玄色绣金线麒麟暗纹朝服，鎏金冠束发，剑眉星目气场凛冽；性格关键词：外柔内刚，隐忍腹黑，杀伐果断，对妻子极其温柔；视觉风格：国漫古风条漫风格，厚涂质感，高对比明暗光影，人物情绪张力拉满，适配9:16竖屏画幅；请输出适合后续视频绑定的单人角色定妆图，服装、气质与身份明确，人物完整，便于后续复用。",
+          "owner_id": "林辰",
+          "metadata": {
+            "character_name": "林辰",
+            "reference_index": 1
+          }
+        }
+      ]
+    },
+    {
+      "character_id": "苏夫人",
+      "name": "苏夫人",
+      "role": "苏家主母，男主岳母",
+      "summary": "极度嫌弃穷赘婿林辰，三年来处处刁难打压，势利眼至极",
+      "personality": "尖酸刻薄，嫌贫爱富，趋炎附势，胆小怯懦",
+      "appearance": "穿朱红织金寿纹褙子，满头鎏金红宝石头面，三角眼吊梢眉，满脸刻薄相",
+      "appearance_prompt": "国漫厚涂古风中年女性，朱红织金褙子，满头贵重金饰，尖酸刻薄面相，高对比光影，9:16竖屏",
+      "voice_style": "说话尖锐刻薄，趾高气昂，被吓到后声音发颤语无伦次",
+      "notes": null,
+      "reference_assets": [
+        {
+          "asset_id": "苏夫人_anchor",
+          "asset_type": "character_anchor",
+          "source": "seed_image",
+          "path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏夫人/苏夫人_anchor_01.jpg",
+          "url": null,
+          "role": "anchor",
+          "prompt": "角色名：苏夫人；角色定位：苏家主母，男主岳母；人物简介：极度嫌弃穷赘婿林辰，三年来处处刁难打压，势利眼至极；外形描述：穿朱红织金寿纹褙子，满头鎏金红宝石头面，三角眼吊梢眉，满脸刻薄相；性格关键词：尖酸刻薄，嫌贫爱富，趋炎附势，胆小怯懦；视觉风格：国漫古风条漫风格，厚涂质感，高对比明暗光影，人物情绪张力拉满，适配9:16竖屏画幅；请输出适合后续视频绑定的单人角色定妆图，服装、气质与身份明确，人物完整，便于后续复用。",
+          "owner_id": "苏夫人",
+          "metadata": {
+            "character_name": "苏夫人"
+          }
+        },
+        {
+          "asset_id": "苏夫人_ref_01",
+          "asset_type": "character_reference",
+          "source": "seed_image",
+          "path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏夫人/苏夫人_ref_01.jpg",
+          "url": null,
+          "role": "reference_image",
+          "prompt": "角色名：苏夫人；角色定位：苏家主母，男主岳母；人物简介：极度嫌弃穷赘婿林辰，三年来处处刁难打压，势利眼至极；外形描述：穿朱红织金寿纹褙子，满头鎏金红宝石头面，三角眼吊梢眉，满脸刻薄相；性格关键词：尖酸刻薄，嫌贫爱富，趋炎附势，胆小怯懦；视觉风格：国漫古风条漫风格，厚涂质感，高对比明暗光影，人物情绪张力拉满，适配9:16竖屏画幅；请输出适合后续视频绑定的单人角色定妆图，服装、气质与身份明确，人物完整，便于后续复用。",
+          "owner_id": "苏夫人",
+          "metadata": {
+            "character_name": "苏夫人",
+            "reference_index": 1
+          }
+        }
+      ]
+    },
+    {
+      "character_id": "苏婉清",
+      "name": "苏婉清",
+      "role": "苏家嫡女，男主妻子",
+      "summary": "善良温柔，心疼丈夫却不敢违抗母亲，三年来跟着丈夫受了不少委屈",
+      "personality": "温柔善良，隐忍懦弱，重感情",
+      "appearance": "穿水粉色绣海棠罗裙，素银簪束发，眉眼清丽，常带愧疚愁容",
+      "appearance_prompt": "国漫厚涂古风年轻女性，粉色绣海棠罗裙，素银簪，眉眼清丽面带愁容，高对比光影，9:16竖屏",
+      "voice_style": "说话轻柔怯懦，带着哭腔时语气哽咽",
+      "notes": null,
+      "reference_assets": [
+        {
+          "asset_id": "苏婉清_anchor",
+          "asset_type": "character_anchor",
+          "source": "seed_image",
+          "path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏婉清/苏婉清_anchor_01.jpg",
+          "url": null,
+          "role": "anchor",
+          "prompt": "角色名：苏婉清；角色定位：苏家嫡女，男主妻子；人物简介：善良温柔，心疼丈夫却不敢违抗母亲，三年来跟着丈夫受了不少委屈；外形描述：穿水粉色绣海棠罗裙，素银簪束发，眉眼清丽，常带愧疚愁容；性格关键词：温柔善良，隐忍懦弱，重感情；视觉风格：国漫古风条漫风格，厚涂质感，高对比明暗光影，人物情绪张力拉满，适配9:16竖屏画幅；请输出适合后续视频绑定的单人角色定妆图，服装、气质与身份明确，人物完整，便于后续复用。",
+          "owner_id": "苏婉清",
+          "metadata": {
+            "character_name": "苏婉清"
+          }
+        },
+        {
+          "asset_id": "苏婉清_ref_01",
+          "asset_type": "character_reference",
+          "source": "seed_image",
+          "path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏婉清/苏婉清_ref_01.jpg",
+          "url": null,
+          "role": "reference_image",
+          "prompt": "角色名：苏婉清；角色定位：苏家嫡女，男主妻子；人物简介：善良温柔，心疼丈夫却不敢违抗母亲，三年来跟着丈夫受了不少委屈；外形描述：穿水粉色绣海棠罗裙，素银簪束发，眉眼清丽，常带愧疚愁容；性格关键词：温柔善良，隐忍懦弱，重感情；视觉风格：国漫古风条漫风格，厚涂质感，高对比明暗光影，人物情绪张力拉满，适配9:16竖屏画幅；请输出适合后续视频绑定的单人角色定妆图，服装、气质与身份明确，人物完整，便于后续复用。",
+          "owner_id": "苏婉清",
+          "metadata": {
+            "character_name": "苏婉清",
+            "reference_index": 1
+          }
+        }
+      ]
+    }
+  ],
+  "shots": [
+    {
+      "shot_id": "shot_001",
+      "shot_index": 1,
+      "title": "寿宴受辱",
+      "duration_seconds": 6,
+      "visual_description": "寿宴大堂，苏夫人站在主位指着跪在地上的林辰破口大骂，周围宾客围在一旁指指点点嬉笑",
+      "dialogue": "苏夫人：「你个废物！连份像样的寿礼都拿不出来，也配出现在我寿宴上？」",
+      "sound_effects": "宾客嗤笑声，杯盏碰撞声，喜庆的背景乐压得很低",
+      "camera_language": "平视中景，固定机位",
+      "emotion": "铺垫冲突，烘托憋屈压抑的氛围",
+      "characters": [
+        "林辰",
+        "苏夫人"
+      ],
+      "notes": "当前账号未开通 Seedance 2.0 多参考图模型，已回退为“多图生关键帧 + 单图图生视频”模式。",
+      "keyframe_prompt": "镜头标题：寿宴受辱；出镜角色：林辰、苏夫人；画面描述：寿宴大堂，苏夫人站在主位指着跪在地上的林辰破口大骂，周围宾客围在一旁指指点点嬉笑；机位语言：平视中景，固定机位；情绪：铺垫冲突，烘托憋屈压抑的氛围；请生成适合图生视频首帧的关键画面，人物造型稳定，方便后续视频延展。",
+      "video_prompt": "参考图绑定：[图1] 是本镜头构图与动作参考图，请保持整体构图和动作起势一致；[图2] 是 林辰 的角色参考图，请保持人物一致；[图3] 是 苏夫人 的角色参考图，请保持人物一致；镜头标题：寿宴受辱；镜头画面：寿宴大堂，苏夫人站在主位指着跪在地上的林辰破口大骂，周围宾客围在一旁指指点点嬉笑；镜头语言：平视中景，固定机位；情绪目标：铺垫冲突，烘托憋屈压抑的氛围；台词：苏夫人：「你个废物！连份像样的寿礼都拿不出来，也配出现在我寿宴上？」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：宾客嗤笑声，杯盏碰撞声，喜庆的背景乐压得很低；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "prompt_options": {
+        "duration": 6
+      },
+      "reference_bindings": [
+        {
+          "binding_index": 1,
+          "placeholder": "[图1]",
+          "asset_id": "shot_001_keyframe",
+          "asset_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/shots/shot_001/shot_001_keyframe_01.jpg",
+          "character_id": null,
+          "character_name": null,
+          "usage": "reference_image",
+          "prompt_fragment": "[图1] 是本镜头构图与动作参考图，请保持整体构图和动作起势一致"
+        },
+        {
+          "binding_index": 2,
+          "placeholder": "[图2]",
+          "asset_id": "林辰_anchor",
+          "asset_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/林辰/林辰_anchor_01.jpg",
+          "character_id": "林辰",
+          "character_name": "林辰",
+          "usage": "reference_image",
+          "prompt_fragment": "[图2] 是 林辰 的角色参考图，请保持人物一致"
+        },
+        {
+          "binding_index": 3,
+          "placeholder": "[图3]",
+          "asset_id": "苏夫人_anchor",
+          "asset_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏夫人/苏夫人_anchor_01.jpg",
+          "character_id": "苏夫人",
+          "character_name": "苏夫人",
+          "usage": "reference_image",
+          "prompt_fragment": "[图3] 是 苏夫人 的角色参考图，请保持人物一致"
+        }
+      ],
+      "output_assets": [
+        {
+          "asset_id": "shot_001_keyframe",
+          "asset_type": "shot_keyframe",
+          "source": "seed_image",
+          "path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/shots/shot_001/shot_001_keyframe_01.jpg",
+          "url": null,
+          "role": "first_frame",
+          "prompt": "镜头标题：寿宴受辱；出镜角色：林辰、苏夫人；画面描述：寿宴大堂，苏夫人站在主位指着跪在地上的林辰破口大骂，周围宾客围在一旁指指点点嬉笑；机位语言：平视中景，固定机位；情绪：铺垫冲突，烘托憋屈压抑的氛围；请生成适合图生视频首帧的关键画面，人物造型稳定，方便后续视频延展。",
+          "owner_id": "shot_001",
+          "metadata": {
+            "shot_index": 1
+          }
+        },
+        {
+          "asset_id": "shot_001_video_01",
+          "asset_type": "shot_video",
+          "source": "seed_video",
+          "path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/videos/shot_001_01.mp4",
+          "url": null,
+          "role": "video",
+          "prompt": "参考图绑定：[图1] 是本镜头构图与动作参考图，请保持整体构图和动作起势一致；[图2] 是 林辰 的角色参考图，请保持人物一致；[图3] 是 苏夫人 的角色参考图，请保持人物一致；镜头标题：寿宴受辱；镜头画面：寿宴大堂，苏夫人站在主位指着跪在地上的林辰破口大骂，周围宾客围在一旁指指点点嬉笑；镜头语言：平视中景，固定机位；情绪目标：铺垫冲突，烘托憋屈压抑的氛围；台词：苏夫人：「你个废物！连份像样的寿礼都拿不出来，也配出现在我寿宴上？」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：宾客嗤笑声，杯盏碰撞声，喜庆的背景乐压得很低；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+          "owner_id": "shot_001",
+          "metadata": {
+            "shot_index": 1
+          }
+        }
+      ],
+      "status": "generated"
+    },
+    {
+      "shot_id": "shot_002",
+      "shot_index": 2,
+      "title": "妻子求情",
+      "duration_seconds": 6,
+      "visual_description": "林辰低着头手指死死攥紧衣角，脸埋在阴影里看不清表情，苏婉清拉着苏夫人的袖子眼眶通红求情",
+      "dialogue": "苏婉清：「娘，您别骂他了，我替他给您赔罪」",
+      "sound_effects": "布料摩擦声，苏婉清略带哭腔的颤音",
+      "camera_language": "俯拍近景，慢推到林辰攥紧的手上",
+      "emotion": "放大隐忍感，把观众憋屈情绪拉满",
+      "characters": [
+        "林辰",
+        "苏婉清"
+      ],
+      "notes": null,
+      "keyframe_prompt": "镜头标题：妻子求情；出镜角色：林辰、苏婉清；画面描述：林辰低着头手指死死攥紧衣角，脸埋在阴影里看不清表情，苏婉清拉着苏夫人的袖子眼眶通红求情；机位语言：俯拍近景，慢推到林辰攥紧的手上；情绪：放大隐忍感，把观众憋屈情绪拉满；请生成适合图生视频首帧的关键画面，人物造型稳定，方便后续视频延展。",
+      "video_prompt": "参考图绑定：[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致；[图2] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致；镜头标题：妻子求情；镜头画面：林辰低着头手指死死攥紧衣角，脸埋在阴影里看不清表情，苏婉清拉着苏夫人的袖子眼眶通红求情；镜头语言：俯拍近景，慢推到林辰攥紧的手上；情绪目标：放大隐忍感，把观众憋屈情绪拉满；台词：苏婉清：「娘，您别骂他了，我替他给您赔罪」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：布料摩擦声，苏婉清略带哭腔的颤音；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "prompt_options": {
+        "duration": 6
+      },
+      "reference_bindings": [
+        {
+          "binding_index": 1,
+          "placeholder": "[图1]",
+          "asset_id": "林辰_anchor",
+          "asset_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/林辰/林辰_anchor_01.jpg",
+          "character_id": "林辰",
+          "character_name": "林辰",
+          "usage": "reference_image",
+          "prompt_fragment": "[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致"
+        },
+        {
+          "binding_index": 2,
+          "placeholder": "[图2]",
+          "asset_id": "苏婉清_anchor",
+          "asset_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏婉清/苏婉清_anchor_01.jpg",
+          "character_id": "苏婉清",
+          "character_name": "苏婉清",
+          "usage": "reference_image",
+          "prompt_fragment": "[图2] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致"
+        }
+      ],
+      "output_assets": [],
+      "status": "prompt_ready"
+    },
+    {
+      "shot_id": "shot_003",
+      "shot_index": 3,
+      "title": "当众驱逐",
+      "duration_seconds": 6,
+      "visual_description": "苏夫人狠狠甩开苏婉清的手，抬脚踹在林辰肩膀上，林辰晃了晃没倒",
+      "dialogue": "苏夫人：「赔罪有屁用！今天就把你这个废物赶出苏家，和我女儿和离！」",
+      "sound_effects": "踹人的闷响，苏婉清的惊呼声",
+      "camera_language": "平视中景，固定机位",
+      "emotion": "冲突升级，为后续反转做足铺垫",
+      "characters": [
+        "林辰",
+        "苏夫人",
+        "苏婉清"
+      ],
+      "notes": null,
+      "keyframe_prompt": "镜头标题：当众驱逐；出镜角色：林辰、苏夫人、苏婉清；画面描述：苏夫人狠狠甩开苏婉清的手，抬脚踹在林辰肩膀上，林辰晃了晃没倒；机位语言：平视中景，固定机位；情绪：冲突升级，为后续反转做足铺垫；请生成适合图生视频首帧的关键画面，人物造型稳定，方便后续视频延展。",
+      "video_prompt": "参考图绑定：[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致；[图2] 是 苏夫人 的角色参考图，请保持长相、服装和气质一致；[图3] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致；镜头标题：当众驱逐；镜头画面：苏夫人狠狠甩开苏婉清的手，抬脚踹在林辰肩膀上，林辰晃了晃没倒；镜头语言：平视中景，固定机位；情绪目标：冲突升级，为后续反转做足铺垫；台词：苏夫人：「赔罪有屁用！今天就把你这个废物赶出苏家，和我女儿和离！」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：踹人的闷响，苏婉清的惊呼声；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "prompt_options": {
+        "duration": 6
+      },
+      "reference_bindings": [
+        {
+          "binding_index": 1,
+          "placeholder": "[图1]",
+          "asset_id": "林辰_anchor",
+          "asset_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/林辰/林辰_anchor_01.jpg",
+          "character_id": "林辰",
+          "character_name": "林辰",
+          "usage": "reference_image",
+          "prompt_fragment": "[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致"
+        },
+        {
+          "binding_index": 2,
+          "placeholder": "[图2]",
+          "asset_id": "苏夫人_anchor",
+          "asset_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏夫人/苏夫人_anchor_01.jpg",
+          "character_id": "苏夫人",
+          "character_name": "苏夫人",
+          "usage": "reference_image",
+          "prompt_fragment": "[图2] 是 苏夫人 的角色参考图，请保持长相、服装和气质一致"
+        },
+        {
+          "binding_index": 3,
+          "placeholder": "[图3]",
+          "asset_id": "苏婉清_anchor",
+          "asset_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏婉清/苏婉清_anchor_01.jpg",
+          "character_id": "苏婉清",
+          "character_name": "苏婉清",
+          "usage": "reference_image",
+          "prompt_fragment": "[图3] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致"
+        }
+      ],
+      "output_assets": [],
+      "status": "prompt_ready"
+    },
+    {
+      "shot_id": "shot_004",
+      "shot_index": 4,
+      "title": "异动突生",
+      "duration_seconds": 6,
+      "visual_description": "院外突然传来整齐的马蹄声，所有宾客瞬间愣住，齐齐转头看向门口方向",
+      "dialogue": null,
+      "sound_effects": "整齐的马蹄声由远及近，盔甲碰撞声，背景乐骤停",
+      "camera_language": "平视全景，快速摇向院子门口",
+      "emotion": "制造悬念，给出转折信号",
+      "characters": [],
+      "notes": null,
+      "keyframe_prompt": "镜头标题：异动突生；出镜角色：无明确角色；画面描述：院外突然传来整齐的马蹄声，所有宾客瞬间愣住，齐齐转头看向门口方向；机位语言：平视全景，快速摇向院子门口；情绪：制造悬念，给出转折信号；请生成适合图生视频首帧的关键画面，人物造型稳定，方便后续视频延展。",
+      "video_prompt": "镜头标题：异动突生；镜头画面：院外突然传来整齐的马蹄声，所有宾客瞬间愣住，齐齐转头看向门口方向；镜头语言：平视全景，快速摇向院子门口；情绪目标：制造悬念，给出转折信号；音效：整齐的马蹄声由远及近，盔甲碰撞声，背景乐骤停；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "prompt_options": {
+        "duration": 6
+      },
+      "reference_bindings": [],
+      "output_assets": [],
+      "status": "prompt_ready"
+    },
+    {
+      "shot_id": "shot_005",
+      "shot_index": 5,
+      "title": "甲士登门",
+      "duration_seconds": 6,
+      "visual_description": "数百名穿黑甲的禁军冲进院子，齐刷刷单膝跪地，头埋得极低",
+      "dialogue": "甲士齐声：「恭迎王爷回府！」",
+      "sound_effects": "甲士跪地的盔甲碰撞声，齐声喊话的回音",
+      "camera_language": "仰拍全景，固定机位",
+      "emotion": "转折启动，制造错愕感",
+      "characters": [],
+      "notes": null,
+      "keyframe_prompt": "镜头标题：甲士登门；出镜角色：无明确角色；画面描述：数百名穿黑甲的禁军冲进院子，齐刷刷单膝跪地，头埋得极低；机位语言：仰拍全景，固定机位；情绪：转折启动，制造错愕感；请生成适合图生视频首帧的关键画面，人物造型稳定，方便后续视频延展。",
+      "video_prompt": "镜头标题：甲士登门；镜头画面：数百名穿黑甲的禁军冲进院子，齐刷刷单膝跪地，头埋得极低；镜头语言：仰拍全景，固定机位；情绪目标：转折启动，制造错愕感；台词：甲士齐声：「恭迎王爷回府！」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：甲士跪地的盔甲碰撞声，齐声喊话的回音；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "prompt_options": {
+        "duration": 6
+      },
+      "reference_bindings": [],
+      "output_assets": [],
+      "status": "prompt_ready"
+    },
+    {
+      "shot_id": "shot_006",
+      "shot_index": 6,
+      "title": "全场呆滞",
+      "duration_seconds": 6,
+      "visual_description": "快速切过众人表情：苏夫人脸色惨白瞪大眼，苏婉清捂嘴不敢置信，宾客们腿软站不稳",
+      "dialogue": null,
+      "sound_effects": "此起彼伏的倒抽冷气声，有人摔倒的闷响",
+      "camera_language": "快速切特写，每个画面停留0.5秒",
+      "emotion": "放大反差感，爽点铺垫到位",
+      "characters": [
+        "苏夫人",
+        "苏婉清"
+      ],
+      "notes": null,
+      "keyframe_prompt": "镜头标题：全场呆滞；出镜角色：苏夫人、苏婉清；画面描述：快速切过众人表情：苏夫人脸色惨白瞪大眼，苏婉清捂嘴不敢置信，宾客们腿软站不稳；机位语言：快速切特写，每个画面停留0.5秒；情绪：放大反差感，爽点铺垫到位；请生成适合图生视频首帧的关键画面，人物造型稳定，方便后续视频延展。",
+      "video_prompt": "参考图绑定：[图1] 是 苏夫人 的角色参考图，请保持长相、服装和气质一致；[图2] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致；镜头标题：全场呆滞；镜头画面：快速切过众人表情：苏夫人脸色惨白瞪大眼，苏婉清捂嘴不敢置信，宾客们腿软站不稳；镜头语言：快速切特写，每个画面停留0.5秒；情绪目标：放大反差感，爽点铺垫到位；音效：此起彼伏的倒抽冷气声，有人摔倒的闷响；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "prompt_options": {
+        "duration": 6
+      },
+      "reference_bindings": [
+        {
+          "binding_index": 1,
+          "placeholder": "[图1]",
+          "asset_id": "苏夫人_anchor",
+          "asset_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏夫人/苏夫人_anchor_01.jpg",
+          "character_id": "苏夫人",
+          "character_name": "苏夫人",
+          "usage": "reference_image",
+          "prompt_fragment": "[图1] 是 苏夫人 的角色参考图，请保持长相、服装和气质一致"
+        },
+        {
+          "binding_index": 2,
+          "placeholder": "[图2]",
+          "asset_id": "苏婉清_anchor",
+          "asset_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏婉清/苏婉清_anchor_01.jpg",
+          "character_id": "苏婉清",
+          "character_name": "苏婉清",
+          "usage": "reference_image",
+          "prompt_fragment": "[图2] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致"
+        }
+      ],
+      "output_assets": [],
+      "status": "prompt_ready"
+    },
+    {
+      "shot_id": "shot_007",
+      "shot_index": 7,
+      "title": "亮明身份",
+      "duration_seconds": 6,
+      "visual_description": "林辰慢慢抬起头，脸上怯懦消失，眼神冷冽，抬手撕去外面的青布长衫，露出里面绣着麒麟的玄色朝服",
+      "dialogue": "林辰：「本王隐忍三年，你们还真当我是任人拿捏的软柿子？」",
+      "sound_effects": "布料撕裂声，林辰低沉冷冽的声音",
+      "camera_language": "仰拍特写，慢推到林辰的眼睛",
+      "emotion": "爽点正式爆发，身份反转到位",
+      "characters": [
+        "林辰"
+      ],
+      "notes": null,
+      "keyframe_prompt": "镜头标题：亮明身份；出镜角色：林辰；画面描述：林辰慢慢抬起头，脸上怯懦消失，眼神冷冽，抬手撕去外面的青布长衫，露出里面绣着麒麟的玄色朝服；机位语言：仰拍特写，慢推到林辰的眼睛；情绪：爽点正式爆发，身份反转到位；请生成适合图生视频首帧的关键画面，人物造型稳定，方便后续视频延展。",
+      "video_prompt": "参考图绑定：[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致；镜头标题：亮明身份；镜头画面：林辰慢慢抬起头，脸上怯懦消失，眼神冷冽，抬手撕去外面的青布长衫，露出里面绣着麒麟的玄色朝服；镜头语言：仰拍特写，慢推到林辰的眼睛；情绪目标：爽点正式爆发，身份反转到位；台词：林辰：「本王隐忍三年，你们还真当我是任人拿捏的软柿子？」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：布料撕裂声，林辰低沉冷冽的声音；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "prompt_options": {
+        "duration": 6
+      },
+      "reference_bindings": [
+        {
+          "binding_index": 1,
+          "placeholder": "[图1]",
+          "asset_id": "林辰_anchor",
+          "asset_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/林辰/林辰_anchor_01.jpg",
+          "character_id": "林辰",
+          "character_name": "林辰",
+          "usage": "reference_image",
+          "prompt_fragment": "[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致"
+        }
+      ],
+      "output_assets": [],
+      "status": "prompt_ready"
+    },
+    {
+      "shot_id": "shot_008",
+      "shot_index": 8,
+      "title": "岳母下跪",
+      "duration_seconds": 6,
+      "visual_description": "苏夫人吓得腿一软直接瘫坐在地上，手里捧着的寿桃摆件摔在地上碎成几瓣",
+      "dialogue": "苏夫人：「王、王爷！我刚才是跟您开玩笑的，您大人有大量饶了我吧！」",
+      "sound_effects": "瓷器碎裂声，苏夫人牙齿打颤的声音",
+      "camera_language": "俯拍特写，对焦在苏夫人惨白的脸和碎裂的寿桃上",
+      "emotion": "打脸快感拉满，消解前面的憋屈情绪",
+      "characters": [
+        "苏夫人"
+      ],
+      "notes": null,
+      "keyframe_prompt": "镜头标题：岳母下跪；出镜角色：苏夫人；画面描述：苏夫人吓得腿一软直接瘫坐在地上，手里捧着的寿桃摆件摔在地上碎成几瓣；机位语言：俯拍特写，对焦在苏夫人惨白的脸和碎裂的寿桃上；情绪：打脸快感拉满，消解前面的憋屈情绪；请生成适合图生视频首帧的关键画面，人物造型稳定，方便后续视频延展。",
+      "video_prompt": "参考图绑定：[图1] 是 苏夫人 的角色参考图，请保持长相、服装和气质一致；镜头标题：岳母下跪；镜头画面：苏夫人吓得腿一软直接瘫坐在地上，手里捧着的寿桃摆件摔在地上碎成几瓣；镜头语言：俯拍特写，对焦在苏夫人惨白的脸和碎裂的寿桃上；情绪目标：打脸快感拉满，消解前面的憋屈情绪；台词：苏夫人：「王、王爷！我刚才是跟您开玩笑的，您大人有大量饶了我吧！」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：瓷器碎裂声，苏夫人牙齿打颤的声音；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "prompt_options": {
+        "duration": 6
+      },
+      "reference_bindings": [
+        {
+          "binding_index": 1,
+          "placeholder": "[图1]",
+          "asset_id": "苏夫人_anchor",
+          "asset_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏夫人/苏夫人_anchor_01.jpg",
+          "character_id": "苏夫人",
+          "character_name": "苏夫人",
+          "usage": "reference_image",
+          "prompt_fragment": "[图1] 是 苏夫人 的角色参考图，请保持长相、服装和气质一致"
+        }
+      ],
+      "output_assets": [],
+      "status": "prompt_ready"
+    },
+    {
+      "shot_id": "shot_009",
+      "shot_index": 9,
+      "title": "安抚妻子",
+      "duration_seconds": 6,
+      "visual_description": "林辰走到苏婉清面前，伸手把呆愣的她拉起来，眼神瞬间软了下来",
+      "dialogue": "林辰：「婉清，这三年委屈你了，以后没人敢再欺负你」",
+      "sound_effects": "周围极其安静，只剩林辰柔和的声音",
+      "camera_language": "平视中景，固定机位",
+      "emotion": "补充情感线，满足观众情感期待",
+      "characters": [
+        "林辰",
+        "苏婉清"
+      ],
+      "notes": null,
+      "keyframe_prompt": "镜头标题：安抚妻子；出镜角色：林辰、苏婉清；画面描述：林辰走到苏婉清面前，伸手把呆愣的她拉起来，眼神瞬间软了下来；机位语言：平视中景，固定机位；情绪：补充情感线，满足观众情感期待；请生成适合图生视频首帧的关键画面，人物造型稳定，方便后续视频延展。",
+      "video_prompt": "参考图绑定：[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致；[图2] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致；镜头标题：安抚妻子；镜头画面：林辰走到苏婉清面前，伸手把呆愣的她拉起来，眼神瞬间软了下来；镜头语言：平视中景，固定机位；情绪目标：补充情感线，满足观众情感期待；台词：林辰：「婉清，这三年委屈你了，以后没人敢再欺负你」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：周围极其安静，只剩林辰柔和的声音；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "prompt_options": {
+        "duration": 6
+      },
+      "reference_bindings": [
+        {
+          "binding_index": 1,
+          "placeholder": "[图1]",
+          "asset_id": "林辰_anchor",
+          "asset_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/林辰/林辰_anchor_01.jpg",
+          "character_id": "林辰",
+          "character_name": "林辰",
+          "usage": "reference_image",
+          "prompt_fragment": "[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致"
+        },
+        {
+          "binding_index": 2,
+          "placeholder": "[图2]",
+          "asset_id": "苏婉清_anchor",
+          "asset_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏婉清/苏婉清_anchor_01.jpg",
+          "character_id": "苏婉清",
+          "character_name": "苏婉清",
+          "usage": "reference_image",
+          "prompt_fragment": "[图2] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致"
+        }
+      ],
+      "output_assets": [],
+      "status": "prompt_ready"
+    },
+    {
+      "shot_id": "shot_010",
+      "shot_index": 10,
+      "title": "留钩收尾",
+      "duration_seconds": 6,
+      "visual_description": "林辰搂着苏婉清的腰转身往外走，甲士分列两边开路，地上跪着瑟瑟发抖的苏家人和宾客，最后定格在林辰冷峻的侧脸上，弹出字幕「关注看全集，赘婿王爷复仇爽不停」",
+      "dialogue": null,
+      "sound_effects": "风吹衣袍的猎猎声，沉稳的脚步声",
+      "camera_language": "跟拍中景，最后定格特写林辰侧脸",
+      "emotion": "留下悬念，引导用户关注追更",
+      "characters": [
+        "林辰",
+        "苏婉清"
+      ],
+      "notes": null,
+      "keyframe_prompt": "镜头标题：留钩收尾；出镜角色：林辰、苏婉清；画面描述：林辰搂着苏婉清的腰转身往外走，甲士分列两边开路，地上跪着瑟瑟发抖的苏家人和宾客，最后定格在林辰冷峻的侧脸上，弹出字幕「关注看全集，赘婿王爷复仇爽不停」；机位语言：跟拍中景，最后定格特写林辰侧脸；情绪：留下悬念，引导用户关注追更；请生成适合图生视频首帧的关键画面，人物造型稳定，方便后续视频延展。",
+      "video_prompt": "参考图绑定：[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致；[图2] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致；镜头标题：留钩收尾；镜头画面：林辰搂着苏婉清的腰转身往外走，甲士分列两边开路，地上跪着瑟瑟发抖的苏家人和宾客，最后定格在林辰冷峻的侧脸上，弹出字幕「关注看全集，赘婿王爷复仇爽不停」；镜头语言：跟拍中景，最后定格特写林辰侧脸；情绪目标：留下悬念，引导用户关注追更；音效：风吹衣袍的猎猎声，沉稳的脚步声；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "prompt_options": {
+        "duration": 6
+      },
+      "reference_bindings": [
+        {
+          "binding_index": 1,
+          "placeholder": "[图1]",
+          "asset_id": "林辰_anchor",
+          "asset_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/林辰/林辰_anchor_01.jpg",
+          "character_id": "林辰",
+          "character_name": "林辰",
+          "usage": "reference_image",
+          "prompt_fragment": "[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致"
+        },
+        {
+          "binding_index": 2,
+          "placeholder": "[图2]",
+          "asset_id": "苏婉清_anchor",
+          "asset_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏婉清/苏婉清_anchor_01.jpg",
+          "character_id": "苏婉清",
+          "character_name": "苏婉清",
+          "usage": "reference_image",
+          "prompt_fragment": "[图2] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致"
+        }
+      ],
+      "output_assets": [],
+      "status": "prompt_ready"
+    }
+  ],
+  "workflow_cards": [
+    {
+      "card_id": "shot_001_workflow_card",
+      "shot_id": "shot_001",
+      "title": "寿宴受辱",
+      "duration_seconds": 6,
+      "upload_sequence": [
+        "[图1] -> /Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/shots/shot_001/shot_001_keyframe_01.jpg",
+        "[图2] -> /Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/林辰/林辰_anchor_01.jpg",
+        "[图3] -> /Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏夫人/苏夫人_anchor_01.jpg"
+      ],
+      "placeholder_mapping": [
+        "[图1] -> reference_image",
+        "[图2] -> 林辰",
+        "[图3] -> 苏夫人"
+      ],
+      "api_prompt": "参考图绑定：[图1] 是本镜头构图与动作参考图，请保持整体构图和动作起势一致；[图2] 是 林辰 的角色参考图，请保持人物一致；[图3] 是 苏夫人 的角色参考图，请保持人物一致；镜头标题：寿宴受辱；镜头画面：寿宴大堂，苏夫人站在主位指着跪在地上的林辰破口大骂，周围宾客围在一旁指指点点嬉笑；镜头语言：平视中景，固定机位；情绪目标：铺垫冲突，烘托憋屈压抑的氛围；台词：苏夫人：「你个废物！连份像样的寿礼都拿不出来，也配出现在我寿宴上？」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：宾客嗤笑声，杯盏碰撞声，喜庆的背景乐压得很低；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "fallback_prompt": "参考图绑定：[图1] 是本镜头构图与动作参考图，请保持整体构图和动作起势一致；[图2] 是 林辰 的角色参考图，请保持人物一致；[图3] 是 苏夫人 的角色参考图，请保持人物一致；镜头标题：寿宴受辱；镜头画面：寿宴大堂，苏夫人站在主位指着跪在地上的林辰破口大骂，周围宾客围在一旁指指点点嬉笑；镜头语言：平视中景，固定机位；情绪目标：铺垫冲突，烘托憋屈压抑的氛围；台词：苏夫人：「你个废物！连份像样的寿礼都拿不出来，也配出现在我寿宴上？」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：宾客嗤笑声，杯盏碰撞声，喜庆的背景乐压得很低；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "dialogue": "苏夫人：「你个废物！连份像样的寿礼都拿不出来，也配出现在我寿宴上？」",
+      "sound_effects": "宾客嗤笑声，杯盏碰撞声，喜庆的背景乐压得很低",
+      "notes": "当前账号未开通 Seedance 2.0 多参考图模型，已回退为“多图生关键帧 + 单图图生视频”模式。\nAPI 调用时请保持上传顺序与占位符编号一致。"
+    },
+    {
+      "card_id": "shot_002_workflow_card",
+      "shot_id": "shot_002",
+      "title": "妻子求情",
+      "duration_seconds": 6,
+      "upload_sequence": [
+        "[图1] -> /Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/林辰/林辰_anchor_01.jpg",
+        "[图2] -> /Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏婉清/苏婉清_anchor_01.jpg"
+      ],
+      "placeholder_mapping": [
+        "[图1] -> 林辰",
+        "[图2] -> 苏婉清"
+      ],
+      "api_prompt": "参考图绑定：[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致；[图2] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致；镜头标题：妻子求情；镜头画面：林辰低着头手指死死攥紧衣角，脸埋在阴影里看不清表情，苏婉清拉着苏夫人的袖子眼眶通红求情；镜头语言：俯拍近景，慢推到林辰攥紧的手上；情绪目标：放大隐忍感，把观众憋屈情绪拉满；台词：苏婉清：「娘，您别骂他了，我替他给您赔罪」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：布料摩擦声，苏婉清略带哭腔的颤音；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "fallback_prompt": "参考图绑定：[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致；[图2] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致；镜头标题：妻子求情；镜头画面：林辰低着头手指死死攥紧衣角，脸埋在阴影里看不清表情，苏婉清拉着苏夫人的袖子眼眶通红求情；镜头语言：俯拍近景，慢推到林辰攥紧的手上；情绪目标：放大隐忍感，把观众憋屈情绪拉满；台词：苏婉清：「娘，您别骂他了，我替他给您赔罪」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：布料摩擦声，苏婉清略带哭腔的颤音；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "dialogue": "苏婉清：「娘，您别骂他了，我替他给您赔罪」",
+      "sound_effects": "布料摩擦声，苏婉清略带哭腔的颤音",
+      "notes": "API 调用时请保持上传顺序与占位符编号一致。"
+    },
+    {
+      "card_id": "shot_003_workflow_card",
+      "shot_id": "shot_003",
+      "title": "当众驱逐",
+      "duration_seconds": 6,
+      "upload_sequence": [
+        "[图1] -> /Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/林辰/林辰_anchor_01.jpg",
+        "[图2] -> /Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏夫人/苏夫人_anchor_01.jpg",
+        "[图3] -> /Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏婉清/苏婉清_anchor_01.jpg"
+      ],
+      "placeholder_mapping": [
+        "[图1] -> 林辰",
+        "[图2] -> 苏夫人",
+        "[图3] -> 苏婉清"
+      ],
+      "api_prompt": "参考图绑定：[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致；[图2] 是 苏夫人 的角色参考图，请保持长相、服装和气质一致；[图3] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致；镜头标题：当众驱逐；镜头画面：苏夫人狠狠甩开苏婉清的手，抬脚踹在林辰肩膀上，林辰晃了晃没倒；镜头语言：平视中景，固定机位；情绪目标：冲突升级，为后续反转做足铺垫；台词：苏夫人：「赔罪有屁用！今天就把你这个废物赶出苏家，和我女儿和离！」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：踹人的闷响，苏婉清的惊呼声；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "fallback_prompt": "参考图绑定：[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致；[图2] 是 苏夫人 的角色参考图，请保持长相、服装和气质一致；[图3] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致；镜头标题：当众驱逐；镜头画面：苏夫人狠狠甩开苏婉清的手，抬脚踹在林辰肩膀上，林辰晃了晃没倒；镜头语言：平视中景，固定机位；情绪目标：冲突升级，为后续反转做足铺垫；台词：苏夫人：「赔罪有屁用！今天就把你这个废物赶出苏家，和我女儿和离！」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：踹人的闷响，苏婉清的惊呼声；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "dialogue": "苏夫人：「赔罪有屁用！今天就把你这个废物赶出苏家，和我女儿和离！」",
+      "sound_effects": "踹人的闷响，苏婉清的惊呼声",
+      "notes": "API 调用时请保持上传顺序与占位符编号一致。"
+    },
+    {
+      "card_id": "shot_004_workflow_card",
+      "shot_id": "shot_004",
+      "title": "异动突生",
+      "duration_seconds": 6,
+      "upload_sequence": [],
+      "placeholder_mapping": [],
+      "api_prompt": "镜头标题：异动突生；镜头画面：院外突然传来整齐的马蹄声，所有宾客瞬间愣住，齐齐转头看向门口方向；镜头语言：平视全景，快速摇向院子门口；情绪目标：制造悬念，给出转折信号；音效：整齐的马蹄声由远及近，盔甲碰撞声，背景乐骤停；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "fallback_prompt": "镜头标题：异动突生；镜头画面：院外突然传来整齐的马蹄声，所有宾客瞬间愣住，齐齐转头看向门口方向；镜头语言：平视全景，快速摇向院子门口；情绪目标：制造悬念，给出转折信号；音效：整齐的马蹄声由远及近，盔甲碰撞声，背景乐骤停；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "dialogue": null,
+      "sound_effects": "整齐的马蹄声由远及近，盔甲碰撞声，背景乐骤停",
+      "notes": null
+    },
+    {
+      "card_id": "shot_005_workflow_card",
+      "shot_id": "shot_005",
+      "title": "甲士登门",
+      "duration_seconds": 6,
+      "upload_sequence": [],
+      "placeholder_mapping": [],
+      "api_prompt": "镜头标题：甲士登门；镜头画面：数百名穿黑甲的禁军冲进院子，齐刷刷单膝跪地，头埋得极低；镜头语言：仰拍全景，固定机位；情绪目标：转折启动，制造错愕感；台词：甲士齐声：「恭迎王爷回府！」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：甲士跪地的盔甲碰撞声，齐声喊话的回音；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "fallback_prompt": "镜头标题：甲士登门；镜头画面：数百名穿黑甲的禁军冲进院子，齐刷刷单膝跪地，头埋得极低；镜头语言：仰拍全景，固定机位；情绪目标：转折启动，制造错愕感；台词：甲士齐声：「恭迎王爷回府！」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：甲士跪地的盔甲碰撞声，齐声喊话的回音；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "dialogue": "甲士齐声：「恭迎王爷回府！」",
+      "sound_effects": "甲士跪地的盔甲碰撞声，齐声喊话的回音",
+      "notes": null
+    },
+    {
+      "card_id": "shot_006_workflow_card",
+      "shot_id": "shot_006",
+      "title": "全场呆滞",
+      "duration_seconds": 6,
+      "upload_sequence": [
+        "[图1] -> /Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏夫人/苏夫人_anchor_01.jpg",
+        "[图2] -> /Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏婉清/苏婉清_anchor_01.jpg"
+      ],
+      "placeholder_mapping": [
+        "[图1] -> 苏夫人",
+        "[图2] -> 苏婉清"
+      ],
+      "api_prompt": "参考图绑定：[图1] 是 苏夫人 的角色参考图，请保持长相、服装和气质一致；[图2] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致；镜头标题：全场呆滞；镜头画面：快速切过众人表情：苏夫人脸色惨白瞪大眼，苏婉清捂嘴不敢置信，宾客们腿软站不稳；镜头语言：快速切特写，每个画面停留0.5秒；情绪目标：放大反差感，爽点铺垫到位；音效：此起彼伏的倒抽冷气声，有人摔倒的闷响；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "fallback_prompt": "参考图绑定：[图1] 是 苏夫人 的角色参考图，请保持长相、服装和气质一致；[图2] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致；镜头标题：全场呆滞；镜头画面：快速切过众人表情：苏夫人脸色惨白瞪大眼，苏婉清捂嘴不敢置信，宾客们腿软站不稳；镜头语言：快速切特写，每个画面停留0.5秒；情绪目标：放大反差感，爽点铺垫到位；音效：此起彼伏的倒抽冷气声，有人摔倒的闷响；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "dialogue": null,
+      "sound_effects": "此起彼伏的倒抽冷气声，有人摔倒的闷响",
+      "notes": "API 调用时请保持上传顺序与占位符编号一致。"
+    },
+    {
+      "card_id": "shot_007_workflow_card",
+      "shot_id": "shot_007",
+      "title": "亮明身份",
+      "duration_seconds": 6,
+      "upload_sequence": [
+        "[图1] -> /Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/林辰/林辰_anchor_01.jpg"
+      ],
+      "placeholder_mapping": [
+        "[图1] -> 林辰"
+      ],
+      "api_prompt": "参考图绑定：[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致；镜头标题：亮明身份；镜头画面：林辰慢慢抬起头，脸上怯懦消失，眼神冷冽，抬手撕去外面的青布长衫，露出里面绣着麒麟的玄色朝服；镜头语言：仰拍特写，慢推到林辰的眼睛；情绪目标：爽点正式爆发，身份反转到位；台词：林辰：「本王隐忍三年，你们还真当我是任人拿捏的软柿子？」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：布料撕裂声，林辰低沉冷冽的声音；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "fallback_prompt": "参考图绑定：[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致；镜头标题：亮明身份；镜头画面：林辰慢慢抬起头，脸上怯懦消失，眼神冷冽，抬手撕去外面的青布长衫，露出里面绣着麒麟的玄色朝服；镜头语言：仰拍特写，慢推到林辰的眼睛；情绪目标：爽点正式爆发，身份反转到位；台词：林辰：「本王隐忍三年，你们还真当我是任人拿捏的软柿子？」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：布料撕裂声，林辰低沉冷冽的声音；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "dialogue": "林辰：「本王隐忍三年，你们还真当我是任人拿捏的软柿子？」",
+      "sound_effects": "布料撕裂声，林辰低沉冷冽的声音",
+      "notes": "API 调用时请保持上传顺序与占位符编号一致。"
+    },
+    {
+      "card_id": "shot_008_workflow_card",
+      "shot_id": "shot_008",
+      "title": "岳母下跪",
+      "duration_seconds": 6,
+      "upload_sequence": [
+        "[图1] -> /Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏夫人/苏夫人_anchor_01.jpg"
+      ],
+      "placeholder_mapping": [
+        "[图1] -> 苏夫人"
+      ],
+      "api_prompt": "参考图绑定：[图1] 是 苏夫人 的角色参考图，请保持长相、服装和气质一致；镜头标题：岳母下跪；镜头画面：苏夫人吓得腿一软直接瘫坐在地上，手里捧着的寿桃摆件摔在地上碎成几瓣；镜头语言：俯拍特写，对焦在苏夫人惨白的脸和碎裂的寿桃上；情绪目标：打脸快感拉满，消解前面的憋屈情绪；台词：苏夫人：「王、王爷！我刚才是跟您开玩笑的，您大人有大量饶了我吧！」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：瓷器碎裂声，苏夫人牙齿打颤的声音；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "fallback_prompt": "参考图绑定：[图1] 是 苏夫人 的角色参考图，请保持长相、服装和气质一致；镜头标题：岳母下跪；镜头画面：苏夫人吓得腿一软直接瘫坐在地上，手里捧着的寿桃摆件摔在地上碎成几瓣；镜头语言：俯拍特写，对焦在苏夫人惨白的脸和碎裂的寿桃上；情绪目标：打脸快感拉满，消解前面的憋屈情绪；台词：苏夫人：「王、王爷！我刚才是跟您开玩笑的，您大人有大量饶了我吧！」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：瓷器碎裂声，苏夫人牙齿打颤的声音；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "dialogue": "苏夫人：「王、王爷！我刚才是跟您开玩笑的，您大人有大量饶了我吧！」",
+      "sound_effects": "瓷器碎裂声，苏夫人牙齿打颤的声音",
+      "notes": "API 调用时请保持上传顺序与占位符编号一致。"
+    },
+    {
+      "card_id": "shot_009_workflow_card",
+      "shot_id": "shot_009",
+      "title": "安抚妻子",
+      "duration_seconds": 6,
+      "upload_sequence": [
+        "[图1] -> /Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/林辰/林辰_anchor_01.jpg",
+        "[图2] -> /Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏婉清/苏婉清_anchor_01.jpg"
+      ],
+      "placeholder_mapping": [
+        "[图1] -> 林辰",
+        "[图2] -> 苏婉清"
+      ],
+      "api_prompt": "参考图绑定：[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致；[图2] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致；镜头标题：安抚妻子；镜头画面：林辰走到苏婉清面前，伸手把呆愣的她拉起来，眼神瞬间软了下来；镜头语言：平视中景，固定机位；情绪目标：补充情感线，满足观众情感期待；台词：林辰：「婉清，这三年委屈你了，以后没人敢再欺负你」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：周围极其安静，只剩林辰柔和的声音；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "fallback_prompt": "参考图绑定：[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致；[图2] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致；镜头标题：安抚妻子；镜头画面：林辰走到苏婉清面前，伸手把呆愣的她拉起来，眼神瞬间软了下来；镜头语言：平视中景，固定机位；情绪目标：补充情感线，满足观众情感期待；台词：林辰：「婉清，这三年委屈你了，以后没人敢再欺负你」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：周围极其安静，只剩林辰柔和的声音；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "dialogue": "林辰：「婉清，这三年委屈你了，以后没人敢再欺负你」",
+      "sound_effects": "周围极其安静，只剩林辰柔和的声音",
+      "notes": "API 调用时请保持上传顺序与占位符编号一致。"
+    },
+    {
+      "card_id": "shot_010_workflow_card",
+      "shot_id": "shot_010",
+      "title": "留钩收尾",
+      "duration_seconds": 6,
+      "upload_sequence": [
+        "[图1] -> /Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/林辰/林辰_anchor_01.jpg",
+        "[图2] -> /Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏婉清/苏婉清_anchor_01.jpg"
+      ],
+      "placeholder_mapping": [
+        "[图1] -> 林辰",
+        "[图2] -> 苏婉清"
+      ],
+      "api_prompt": "参考图绑定：[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致；[图2] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致；镜头标题：留钩收尾；镜头画面：林辰搂着苏婉清的腰转身往外走，甲士分列两边开路，地上跪着瑟瑟发抖的苏家人和宾客，最后定格在林辰冷峻的侧脸上，弹出字幕「关注看全集，赘婿王爷复仇爽不停」；镜头语言：跟拍中景，最后定格特写林辰侧脸；情绪目标：留下悬念，引导用户关注追更；音效：风吹衣袍的猎猎声，沉稳的脚步声；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "fallback_prompt": "参考图绑定：[图1] 是 林辰 的角色参考图，请保持长相、服装和气质一致；[图2] 是 苏婉清 的角色参考图，请保持长相、服装和气质一致；镜头标题：留钩收尾；镜头画面：林辰搂着苏婉清的腰转身往外走，甲士分列两边开路，地上跪着瑟瑟发抖的苏家人和宾客，最后定格在林辰冷峻的侧脸上，弹出字幕「关注看全集，赘婿王爷复仇爽不停」；镜头语言：跟拍中景，最后定格特写林辰侧脸；情绪目标：留下悬念，引导用户关注追更；音效：风吹衣袍的猎猎声，沉稳的脚步声；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "dialogue": null,
+      "sound_effects": "风吹衣袍的猎猎声，沉稳的脚步声",
+      "notes": "API 调用时请保持上传顺序与占位符编号一致。"
+    }
+  ],
+  "assets": [
+    {
+      "asset_id": "林辰_anchor",
+      "asset_type": "character_anchor",
+      "source": "seed_image",
+      "path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/林辰/林辰_anchor_01.jpg",
+      "url": null,
+      "role": "anchor",
+      "prompt": "角色名：林辰；角色定位：男主，赘婿/隐姓埋名的当朝异姓王；人物简介：为报苏家当年救命之恩，隐去王爷身份入赘苏家，隐忍三年受尽欺辱；外形描述：日常赘婿状态穿洗发白的青布长衫，束普通木簪，眉眼低垂气质怯懦；亮身份时穿玄色绣金线麒麟暗纹朝服，鎏金冠束发，剑眉星目气场凛冽；性格关键词：外柔内刚，隐忍腹黑，杀伐果断，对妻子极其温柔；视觉风格：国漫古风条漫风格，厚涂质感，高对比明暗光影，人物情绪张力拉满，适配9:16竖屏画幅；请输出适合后续视频绑定的单人角色定妆图，服装、气质与身份明确，人物完整，便于后续复用。",
+      "owner_id": "林辰",
+      "metadata": {
+        "character_name": "林辰"
+      }
+    },
+    {
+      "asset_id": "林辰_ref_01",
+      "asset_type": "character_reference",
+      "source": "seed_image",
+      "path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/林辰/林辰_ref_01.jpg",
+      "url": null,
+      "role": "reference_image",
+      "prompt": "角色名：林辰；角色定位：男主，赘婿/隐姓埋名的当朝异姓王；人物简介：为报苏家当年救命之恩，隐去王爷身份入赘苏家，隐忍三年受尽欺辱；外形描述：日常赘婿状态穿洗发白的青布长衫，束普通木簪，眉眼低垂气质怯懦；亮身份时穿玄色绣金线麒麟暗纹朝服，鎏金冠束发，剑眉星目气场凛冽；性格关键词：外柔内刚，隐忍腹黑，杀伐果断，对妻子极其温柔；视觉风格：国漫古风条漫风格，厚涂质感，高对比明暗光影，人物情绪张力拉满，适配9:16竖屏画幅；请输出适合后续视频绑定的单人角色定妆图，服装、气质与身份明确，人物完整，便于后续复用。",
+      "owner_id": "林辰",
+      "metadata": {
+        "character_name": "林辰",
+        "reference_index": 1
+      }
+    },
+    {
+      "asset_id": "苏夫人_anchor",
+      "asset_type": "character_anchor",
+      "source": "seed_image",
+      "path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏夫人/苏夫人_anchor_01.jpg",
+      "url": null,
+      "role": "anchor",
+      "prompt": "角色名：苏夫人；角色定位：苏家主母，男主岳母；人物简介：极度嫌弃穷赘婿林辰，三年来处处刁难打压，势利眼至极；外形描述：穿朱红织金寿纹褙子，满头鎏金红宝石头面，三角眼吊梢眉，满脸刻薄相；性格关键词：尖酸刻薄，嫌贫爱富，趋炎附势，胆小怯懦；视觉风格：国漫古风条漫风格，厚涂质感，高对比明暗光影，人物情绪张力拉满，适配9:16竖屏画幅；请输出适合后续视频绑定的单人角色定妆图，服装、气质与身份明确，人物完整，便于后续复用。",
+      "owner_id": "苏夫人",
+      "metadata": {
+        "character_name": "苏夫人"
+      }
+    },
+    {
+      "asset_id": "苏夫人_ref_01",
+      "asset_type": "character_reference",
+      "source": "seed_image",
+      "path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏夫人/苏夫人_ref_01.jpg",
+      "url": null,
+      "role": "reference_image",
+      "prompt": "角色名：苏夫人；角色定位：苏家主母，男主岳母；人物简介：极度嫌弃穷赘婿林辰，三年来处处刁难打压，势利眼至极；外形描述：穿朱红织金寿纹褙子，满头鎏金红宝石头面，三角眼吊梢眉，满脸刻薄相；性格关键词：尖酸刻薄，嫌贫爱富，趋炎附势，胆小怯懦；视觉风格：国漫古风条漫风格，厚涂质感，高对比明暗光影，人物情绪张力拉满，适配9:16竖屏画幅；请输出适合后续视频绑定的单人角色定妆图，服装、气质与身份明确，人物完整，便于后续复用。",
+      "owner_id": "苏夫人",
+      "metadata": {
+        "character_name": "苏夫人",
+        "reference_index": 1
+      }
+    },
+    {
+      "asset_id": "苏婉清_anchor",
+      "asset_type": "character_anchor",
+      "source": "seed_image",
+      "path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏婉清/苏婉清_anchor_01.jpg",
+      "url": null,
+      "role": "anchor",
+      "prompt": "角色名：苏婉清；角色定位：苏家嫡女，男主妻子；人物简介：善良温柔，心疼丈夫却不敢违抗母亲，三年来跟着丈夫受了不少委屈；外形描述：穿水粉色绣海棠罗裙，素银簪束发，眉眼清丽，常带愧疚愁容；性格关键词：温柔善良，隐忍懦弱，重感情；视觉风格：国漫古风条漫风格，厚涂质感，高对比明暗光影，人物情绪张力拉满，适配9:16竖屏画幅；请输出适合后续视频绑定的单人角色定妆图，服装、气质与身份明确，人物完整，便于后续复用。",
+      "owner_id": "苏婉清",
+      "metadata": {
+        "character_name": "苏婉清"
+      }
+    },
+    {
+      "asset_id": "苏婉清_ref_01",
+      "asset_type": "character_reference",
+      "source": "seed_image",
+      "path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/characters/苏婉清/苏婉清_ref_01.jpg",
+      "url": null,
+      "role": "reference_image",
+      "prompt": "角色名：苏婉清；角色定位：苏家嫡女，男主妻子；人物简介：善良温柔，心疼丈夫却不敢违抗母亲，三年来跟着丈夫受了不少委屈；外形描述：穿水粉色绣海棠罗裙，素银簪束发，眉眼清丽，常带愧疚愁容；性格关键词：温柔善良，隐忍懦弱，重感情；视觉风格：国漫古风条漫风格，厚涂质感，高对比明暗光影，人物情绪张力拉满，适配9:16竖屏画幅；请输出适合后续视频绑定的单人角色定妆图，服装、气质与身份明确，人物完整，便于后续复用。",
+      "owner_id": "苏婉清",
+      "metadata": {
+        "character_name": "苏婉清",
+        "reference_index": 1
+      }
+    },
+    {
+      "asset_id": "shot_001_keyframe",
+      "asset_type": "shot_keyframe",
+      "source": "seed_image",
+      "path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/shots/shot_001/shot_001_keyframe_01.jpg",
+      "url": null,
+      "role": "first_frame",
+      "prompt": "镜头标题：寿宴受辱；出镜角色：林辰、苏夫人；画面描述：寿宴大堂，苏夫人站在主位指着跪在地上的林辰破口大骂，周围宾客围在一旁指指点点嬉笑；机位语言：平视中景，固定机位；情绪：铺垫冲突，烘托憋屈压抑的氛围；请生成适合图生视频首帧的关键画面，人物造型稳定，方便后续视频延展。",
+      "owner_id": "shot_001",
+      "metadata": {
+        "shot_index": 1
+      }
+    },
+    {
+      "asset_id": "shot_001_video_01",
+      "asset_type": "shot_video",
+      "source": "seed_video",
+      "path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/videos/shot_001_01.mp4",
+      "url": null,
+      "role": "video",
+      "prompt": "参考图绑定：[图1] 是本镜头构图与动作参考图，请保持整体构图和动作起势一致；[图2] 是 林辰 的角色参考图，请保持人物一致；[图3] 是 苏夫人 的角色参考图，请保持人物一致；镜头标题：寿宴受辱；镜头画面：寿宴大堂，苏夫人站在主位指着跪在地上的林辰破口大骂，周围宾客围在一旁指指点点嬉笑；镜头语言：平视中景，固定机位；情绪目标：铺垫冲突，烘托憋屈压抑的氛围；台词：苏夫人：「你个废物！连份像样的寿礼都拿不出来，也配出现在我寿宴上？」；请根据台词生成匹配配音，尽量保证口型与情绪一致；音效：宾客嗤笑声，杯盏碰撞声，喜庆的背景乐压得很低；请同步生成贴合画面的环境音与动作音效；请保持人物一致性与叙事连续性，适合竖屏短剧传播，并输出有声视频。",
+      "owner_id": "shot_001",
+      "metadata": {
+        "shot_index": 1
+      }
+    }
+  ],
+  "manifest": {
+    "project_id": "sprout_node_test_bundle",
+    "project_name": "sprout_node_test",
+    "title": "废婿亮身份：寿宴当场碾压全场",
+    "topic": "比较火的赘婿题材古风短剧",
+    "output_root": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case",
+    "total_characters": 3,
+    "total_shots": 10,
+    "generated_character_assets": 6,
+    "generated_shot_assets": 2,
+    "generated_workflow_cards": 10,
+    "status": "ready",
+    "notes": []
+  },
+  "source_storyboard": null,
+  "notes": []
+}
