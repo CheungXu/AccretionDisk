@@ -1,4 +1,4 @@
-"""兼容计划命名的 schema 导出。"""
+"""Sprout 核心模型导出。"""
 
 from .schema import (
     SproutAsset,

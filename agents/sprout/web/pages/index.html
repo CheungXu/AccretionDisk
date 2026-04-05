@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sprout 工作台</title>
+    <link rel="stylesheet" href="/assets/app.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand-block">
+          <p class="eyebrow">Sprout Workbench</p>
+          <h1>项目工作台</h1>
+          <p class="muted">
+            支持项目导入、节点版本切换、热插拔重跑和镜头产物预览。
+          </p>
+        </div>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>导入项目</h2>
+          </div>
+          <form id="import-form" class="stack-form">
+            <label class="field">
+              <span>项目目录</span>
+              <input
+                id="project-root-input"
+                name="project_root"
+                type="text"
+                placeholder="例如：/Users/me/.../data/sprout/node_test_case"
+                required
+              />
+            </label>
+            <label class="field">
+              <span>导入方式</span>
+              <select id="import-mode-select" name="import_mode">
+                <option value="reference">原地引用</option>
+                <option value="copy">复制到标准目录</option>
+              </select>
+            </label>
+            <button class="primary-button" type="submit">导入项目</button>
+          </form>
+        </section>
+
+        <section class="panel fill-panel">
+          <div class="panel-header panel-header-inline">
+            <h2>项目列表</h2>
+            <button id="refresh-projects-button" class="ghost-button" type="button">
+              刷新
+            </button>
+          </div>
+          <div id="project-list" class="project-list empty-state">
+            正在加载项目...
+          </div>
+        </section>
+      </aside>
+
+      <main class="main-content">
+        <header class="hero">
+          <div>
+            <p class="eyebrow">AIGC 项目管理</p>
+            <h2 id="project-title">请选择项目</h2>
+            <p id="project-subtitle" class="muted">
+              导入 `sprout` 项目目录后，可查看节点、版本、日志与产物。
+            </p>
+          </div>
+          <div id="project-meta" class="meta-chips"></div>
+        </header>
+
+        <section class="stats-grid" id="project-stats"></section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>节点流程</h2>
+          </div>
+          <div id="node-list" class="node-grid empty-state">暂无节点。</div>
+        </section>
+
+        <section class="two-column-grid">
+          <section class="panel">
+            <div class="panel-header">
+              <h2>节点详情</h2>
+            </div>
+            <div id="node-summary" class="empty-state">选择节点后查看详情。</div>
+            <form id="run-node-form" class="stack-form hidden">
+              <div class="form-row">
+                <label class="field">
+                  <span>来源版本</span>
+                  <select id="source-version-select" name="source_version_id">
+                    <option value="">使用当前激活版本</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>角色补图数</span>
+                  <input
+                    id="extra-reference-input"
+                    name="extra_reference_count"
+                    type="number"
+                    value="0"
+                    min="0"
+                  />
+                </label>
+              </div>
+              <label class="field field-checkbox">
+                <input id="force-run-input" name="force" type="checkbox" />
+                <span>强制重跑，忽略已有结果</span>
+              </label>
+              <button id="run-node-button" class="primary-button" type="submit">
+                执行当前节点
+              </button>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>版本与运行</h2>
+            </div>
+            <div id="version-list" class="stack-list empty-state">暂无版本记录。</div>
+            <div id="run-list" class="stack-list empty-state">暂无运行记录。</div>
+          </section>
+        </section>
+
+        <section class="two-column-grid">
+          <section class="panel">
+            <div class="panel-header">
+              <h2>内容载荷</h2>
+            </div>
+            <div id="node-payload" class="payload-container empty-state">暂无内容。</div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>媒体预览</h2>
+            </div>
+            <div id="media-gallery" class="media-gallery empty-state">暂无可预览媒体。</div>
+          </section>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>运行日志</h2>
+          </div>
+          <pre id="run-log" class="log-box">暂无日志。</pre>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+    <script type="module" src="/pages/index.js"></script>
+  </body>
+</html>

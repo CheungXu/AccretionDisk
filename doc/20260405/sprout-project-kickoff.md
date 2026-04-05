@@ -24,13 +24,13 @@
 
 - `agents/sprout/plan.md`
 - `agents/sprout/readme.md`
-- `agents/sprout/schema.py`
-- `agents/sprout/script_planner.py`
-- `agents/sprout/character_builder.py`
-- `agents/sprout/shot_pipeline.py`
-- `agents/sprout/jimeng_packager.py`
-- `agents/sprout/exporter.py`
-- `agents/sprout/workflow.py`
+- `agents/sprout/core/schema.py`
+- `agents/sprout/core/script_planner.py`
+- `agents/sprout/core/character_builder.py`
+- `agents/sprout/core/shot_pipeline.py`
+- `agents/sprout/core/jimeng_packager.py`
+- `agents/sprout/core/exporter.py`
+- `agents/sprout/core/workflow.py`
 - `agents/sprout/run.py`
 - `data/sprout/readme.md`
 - `wiki/sprout/short-drama-workflow.md`
@@ -82,8 +82,8 @@
 
 当前已采取的工程措施：
 
-- `script_planner` 增加更长超时与重试
-- `shot_pipeline` 改为多参考图请求不再混用 `first_frame` 与 `reference_image`
+- `core/script_planner` 增加更长超时与重试
+- `core/shot_pipeline` 改为多参考图请求不再混用 `first_frame` 与 `reference_image`
 - 若账号没有 `Seedance 2.0` 多参考图权限，则自动回退为“多图生成关键帧 + 单图图生视频”
 - CLI 已支持手动覆盖视频模型名，便于后续在不同账号环境下测试
 
@@ -94,3 +94,59 @@
 3. 接入角色生图
 4. 接入镜头级视频生成
 5. 补齐导出清单和交接信息
+
+## 工作台两期决策
+
+当前已将 `sprout` 工作台明确拆成两期：
+
+1. 第一期先完成后端能力，包括项目导入、项目注册表、版本快照、运行时日志、媒体访问和 API。
+2. 第二期在一期测试完成并确认后，再补前端 `HTML/CSS/JS` 页面。
+
+## 一期后端架构落位
+
+为避免 `agents/sprout/` 持续平铺，本轮先将代码职责拆分为：
+
+- `agents/sprout/core/`：核心工作流与领域模型
+- `agents/sprout/service/`：后端支撑层
+- `agents/sprout/web/`：前端工作台
+- `agents/sprout/web_plan.md`：两期计划
+
+当前已进一步收敛为：
+
+- 核心业务实现只保留在 `core/`
+- 顶层历史业务模块已删除
+- 顶层只保留包入口与 CLI
+
+这意味着后续若继续演进工作台或扩展 Agent 能力，不再维护顶层业务模块，所有核心流程统一沿 `core/ -> service/ -> web/` 路径推进。
+
+一期后端当前已补齐的能力：
+
+- 基于项目目录的导入与注册
+- 运行时 `run` 记录与日志文件
+- 节点版本快照与激活版本切换
+- 简单 HTTP API
+- CLI 中的 `import-project`、`list-projects`、`serve-api`
+
+## 一期测试
+
+当前已补充并通过：
+
+- 既有离线冒烟测试
+- 一期后端导入、节点执行、版本与 API 测试
+
+## 工作台当前状态
+
+当前已在 `agents/sprout/web/` 落地原生 `HTML/CSS/JS` 工作台，并通过同一服务入口提供：
+
+- `/`：工作台页面
+- `/api/*`：后端接口
+
+当前页面已支持：
+
+- 项目目录导入
+- 项目列表与摘要展示
+- 节点详情查看
+- 版本切换与版本内容查看
+- 节点重跑
+- 日志查看
+- 图片与视频产物预览

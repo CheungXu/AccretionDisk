@@ -1,4 +1,4 @@
-"""Sprout 项目状态读写。"""
+"""Sprout 核心项目状态读写。"""
 
 from __future__ import annotations
 

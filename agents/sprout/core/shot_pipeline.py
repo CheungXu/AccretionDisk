@@ -1,4 +1,4 @@
-"""Sprout 镜头生成链路。"""
+"""Sprout 核心镜头生成链路。"""
 
 from __future__ import annotations
 

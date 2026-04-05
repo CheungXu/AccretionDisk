@@ -1,4 +1,4 @@
-"""Sprout 剧本规划器。"""
+"""Sprout 核心剧本规划器。"""
 
 from __future__ import annotations
 
@@ -11,7 +11,6 @@ from module.api.seed import SeedLLMClient
 
 from .schema import SproutProjectBundle, SproutTopicInput
 from .utils import load_json_text
-
 
 PLANNING_SCHEMA_EXAMPLE = {
     "title": "竖屏短剧标题",

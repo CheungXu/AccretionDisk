@@ -1,4 +1,4 @@
-"""Sprout 通用工具。"""
+"""Sprout 核心通用工具。"""
 
 from __future__ import annotations
 

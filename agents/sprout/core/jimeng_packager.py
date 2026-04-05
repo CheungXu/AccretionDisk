@@ -1,4 +1,4 @@
-"""Sprout 即梦执行卡封装。"""
+"""Sprout 核心即梦执行卡封装。"""
 
 from __future__ import annotations
 

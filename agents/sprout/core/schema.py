@@ -1,4 +1,4 @@
-"""Sprout 项目数据结构。"""
+"""Sprout 核心项目数据结构。"""
 
 from __future__ import annotations
 

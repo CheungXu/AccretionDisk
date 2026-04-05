@@ -1,4 +1,4 @@
-"""Sprout 项目导出器。"""
+"""Sprout 核心项目导出器。"""
 
 from __future__ import annotations
 

@@ -1,25 +1,36 @@
 """Sprout AI 短剧项目。"""
 
-from .character_builder import SproutCharacterBuilder
-from .exporter import SproutExporter
-from .jimeng_packager import SproutJimengPackager
-from .project_store import SproutProjectStore
-from .schema import (
+from .core import (
     SproutAsset,
     SproutCharacter,
+    SproutCharacterBuilder,
     SproutEpisode,
+    SproutExporter,
+    SproutJimengPackager,
     SproutManifest,
     SproutProjectBundle,
+    SproutProjectStore,
     SproutReferenceBinding,
+    SproutScriptPlanner,
     SproutShot,
+    SproutShotPipeline,
     SproutTopicInput,
+    SproutWorkflow,
     SproutWorkflowCard,
 )
-from .script_planner import SproutScriptPlanner
-from .shot_pipeline import SproutShotPipeline
-from .workflow import SproutWorkflow
+from .service import (
+    SproutHttpApi,
+    SproutProjectAdapter,
+    SproutProjectRegistry,
+    SproutProjectService,
+    SproutRunStore,
+    SproutVersionStore,
+    SproutWorkflowService,
+    run_sprout_api_server,
+)
 
 __all__ = [
+    "SproutHttpApi",
     "SproutAsset",
     "SproutCharacter",
     "SproutCharacterBuilder",
@@ -27,13 +38,20 @@ __all__ = [
     "SproutExporter",
     "SproutJimengPackager",
     "SproutManifest",
+    "SproutProjectAdapter",
     "SproutProjectBundle",
+    "SproutProjectRegistry",
+    "SproutProjectService",
     "SproutProjectStore",
     "SproutReferenceBinding",
+    "SproutRunStore",
     "SproutScriptPlanner",
     "SproutShot",
     "SproutShotPipeline",
     "SproutTopicInput",
+    "SproutVersionStore",
+    "SproutWorkflowService",
     "SproutWorkflow",
     "SproutWorkflowCard",
+    "run_sprout_api_server",
 ]

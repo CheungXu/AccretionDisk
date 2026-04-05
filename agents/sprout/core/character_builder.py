@@ -1,4 +1,4 @@
-"""Sprout 角色资产生成。"""
+"""Sprout 核心角色资产生成。"""
 
 from __future__ import annotations
 

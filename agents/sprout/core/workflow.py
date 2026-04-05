@@ -1,4 +1,4 @@
-"""Sprout 端到端工作流。"""
+"""Sprout 核心端到端工作流。"""
 
 from __future__ import annotations
 
