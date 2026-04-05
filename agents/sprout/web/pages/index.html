@@ -58,23 +58,28 @@
 
       <main class="main-content">
         <header class="hero">
-          <div>
+          <div class="hero-left">
             <p class="eyebrow">AIGC 项目管理</p>
             <h2 id="project-title">请选择项目</h2>
             <p id="project-subtitle" class="muted">
               导入 `sprout` 项目目录后，可查看节点、版本、日志与产物。
             </p>
+            <div id="project-meta" class="meta-chips"></div>
           </div>
-          <div id="project-meta" class="meta-chips"></div>
+          <div class="hero-right">
+            <button id="run-workflow-button" class="action-button hidden" type="button">
+              ▶ 启动工作流
+            </button>
+          </div>
         </header>
 
         <section class="stats-grid" id="project-stats"></section>
 
         <section class="panel">
           <div class="panel-header">
-            <h2>节点流程</h2>
+            <h2>工作流管线</h2>
           </div>
-          <div id="node-list" class="node-grid empty-state">暂无节点。</div>
+          <div id="workflow-diagram" class="workflow-container empty-state">暂无节点。</div>
         </section>
 
         <section class="two-column-grid">
@@ -83,7 +88,7 @@
               <h2>节点详情</h2>
             </div>
             <div id="node-summary" class="empty-state">选择节点后查看详情。</div>
-            <form id="run-node-form" class="stack-form hidden">
+            <form id="run-node-form" class="stack-form hidden" style="margin-top: 20px;">
               <div class="form-row">
                 <label class="field">
                   <span>来源版本</span>

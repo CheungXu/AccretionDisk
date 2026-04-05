@@ -12,7 +12,7 @@ import {
   buildSourceVersionOptions,
   renderLog,
   renderMediaGallery,
-  renderNodeList,
+  renderWorkflowDiagram,
   renderNodePayload,
   renderNodeSummary,
   renderProjectHero,
@@ -34,7 +34,7 @@ const elements = {
   projectSubtitle: document.getElementById("project-subtitle"),
   projectMeta: document.getElementById("project-meta"),
   projectStats: document.getElementById("project-stats"),
-  nodeList: document.getElementById("node-list"),
+  workflowDiagram: document.getElementById("workflow-diagram"),
   nodeSummary: document.getElementById("node-summary"),
   runNodeForm: document.getElementById("run-node-form"),
   sourceVersionSelect: document.getElementById("source-version-select"),
@@ -46,6 +46,7 @@ const elements = {
   mediaGallery: document.getElementById("media-gallery"),
   runLog: document.getElementById("run-log"),
   toast: document.getElementById("toast"),
+  runWorkflowButton: document.getElementById("run-workflow-button"),
 };
 
 function showToast(message, type = "info") {
@@ -224,6 +225,49 @@ async function handleRunNode(event) {
   }
 }
 
+async function handleRunWorkflow() {
+  const state = getState();
+  if (!state.selectedProjectId || !state.projectDetail?.nodes?.length) {
+    return;
+  }
+  
+  const nodes = state.projectDetail.nodes;
+  elements.runWorkflowButton.disabled = true;
+  elements.runWorkflowButton.textContent = "⏳ 工作流执行中...";
+  
+  try {
+    for (const node of nodes) {
+      // Skip plan node as it usually requires manual input or is already done
+      if (node.node_type === "plan") continue;
+      
+      showToast(`正在执行节点：${node.title}...`, "info");
+      
+      // Select the node to show progress
+      await loadNodeDetail(state.selectedProjectId, node.node_type, node.node_key);
+      
+      const payload = {
+        node_type: node.node_type,
+        node_key: node.node_key,
+        source_version_id: null,
+        extra_reference_count: 0,
+        force: false,
+      };
+      
+      await runNode(state.selectedProjectId, payload);
+      
+      // Reload project detail to update workflow diagram status
+      await loadProjectDetail(state.selectedProjectId, `${node.node_type}:${node.node_key}`);
+    }
+    
+    showToast("工作流执行完毕！", "success");
+  } catch (error) {
+    showToast(`工作流中断：${error.message}`, "error");
+  } finally {
+    elements.runWorkflowButton.disabled = false;
+    elements.runWorkflowButton.textContent = "▶ 启动工作流";
+  }
+}
+
 async function handleActionClick(event) {
   const target = event.target.closest("[data-action]");
   if (!target) {
@@ -293,8 +337,15 @@ function renderApp(state) {
   elements.projectTitle.textContent = hero.title;
   elements.projectSubtitle.textContent = hero.subtitle;
   elements.projectMeta.innerHTML = hero.metaHtml;
+  
+  if (state.selectedProjectId) {
+    elements.runWorkflowButton.classList.remove("hidden");
+  } else {
+    elements.runWorkflowButton.classList.add("hidden");
+  }
+  
   elements.projectStats.innerHTML = renderProjectStats(state.projectDetail);
-  elements.nodeList.innerHTML = renderNodeList(state.projectDetail?.nodes || [], state.selectedNodeId);
+  elements.workflowDiagram.innerHTML = renderWorkflowDiagram(state.projectDetail?.nodes || [], state.selectedNodeId);
   elements.nodeSummary.innerHTML = renderNodeSummary(state.nodeDetail);
   elements.versionList.innerHTML = renderVersionList(state.nodeDetail);
   elements.runList.innerHTML = renderRunList(
@@ -322,10 +373,11 @@ function bindEvents() {
     void loadProjects();
   });
   elements.runNodeForm.addEventListener("submit", handleRunNode);
+  elements.runWorkflowButton.addEventListener("click", handleRunWorkflow);
   elements.projectList.addEventListener("click", (event) => {
     void handleActionClick(event);
   });
-  elements.nodeList.addEventListener("click", (event) => {
+  elements.workflowDiagram.addEventListener("click", (event) => {
     void handleActionClick(event);
   });
   elements.versionList.addEventListener("click", (event) => {
