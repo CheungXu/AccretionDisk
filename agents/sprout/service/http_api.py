@@ -6,6 +6,7 @@ import json
 from dataclasses import dataclass
 from urllib.parse import parse_qs, urlsplit
 
+from .directory_picker import SproutDirectoryPicker
 from .media import SproutMediaService
 from .project_service import SproutProjectService
 from .workflow_service import SproutWorkflowService
@@ -18,6 +19,7 @@ class SproutHttpApi:
     project_service: SproutProjectService | None = None
     workflow_service: SproutWorkflowService | None = None
     media_service: SproutMediaService | None = None
+    directory_picker: SproutDirectoryPicker | None = None
 
     def handle_request(
         self,
@@ -45,6 +47,10 @@ class SproutHttpApi:
                     project_root,
                     import_mode=import_mode,
                 )
+                return self._json_response(200, payload)
+
+            if path_parts == ["api", "projects", "select-directory"] and method == "POST":
+                payload = self._get_directory_picker().pick_directory()
                 return self._json_response(200, payload)
 
             if len(path_parts) >= 3 and path_parts[:2] == ["api", "projects"]:
@@ -86,6 +92,7 @@ class SproutHttpApi:
                     return self._json_response(200, payload)
 
                 if path_parts[3:] == ["nodes", "run"] and method == "POST":
+                    raw_user_input_payload = json_body.get("user_input_payload")
                     payload = self._get_workflow_service().run_node(
                         project_id=project_id,
                         node_type=str(json_body.get("node_type") or "").strip(),
@@ -93,6 +100,9 @@ class SproutHttpApi:
                         source_version_id=self._read_optional_body_value(json_body, "source_version_id"),
                         force=bool(json_body.get("force") or False),
                         extra_reference_count=int(json_body.get("extra_reference_count") or 0),
+                        user_input_payload=(
+                            raw_user_input_payload if isinstance(raw_user_input_payload, dict) else None
+                        ),
                     )
                     return self._json_response(200, payload)
 
@@ -167,3 +177,8 @@ class SproutHttpApi:
         if self.media_service is None:
             self.media_service = SproutMediaService()
         return self.media_service
+
+    def _get_directory_picker(self) -> SproutDirectoryPicker:
+        if self.directory_picker is None:
+            self.directory_picker = SproutDirectoryPicker()
+        return self.directory_picker

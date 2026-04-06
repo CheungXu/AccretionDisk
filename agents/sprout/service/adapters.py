@@ -6,10 +6,11 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..core.models import SproutProjectBundle
-from ..core.shared import ensure_directory, read_json_file, slugify_name
+from ..core.models import SproutEpisode, SproutProjectBundle, SproutTopicInput
+from ..core.shared import ensure_directory, read_json_file, slugify_name, write_json_file
 from ..core.storage import SproutProjectStore
 from .types import SproutImportedProjectRecord, build_runtime_id
+from .workflow_nodes import EMPTY_PROJECT_PLACEHOLDER_NOTE
 
 
 @dataclass
@@ -40,17 +41,28 @@ class SproutProjectAdapter:
             if normalized_mode == "copy"
             else resolved_root
         )
-        bundle_path = self._find_single_file(canonical_root / "script", "*_bundle.json")
-        manifest_path = self._find_optional_file(canonical_root / "manifest", "*_manifest.json")
-        bundle = self._get_project_store().load_bundle(bundle_path)
+        bundle_path = self._find_optional_file(canonical_root / "script", "*_bundle.json")
+        notes: list[str] = []
+        if bundle_path is None:
+            if self._is_directory_empty(canonical_root):
+                bundle_path, bundle = self._bootstrap_empty_project(canonical_root)
+                notes.append("检测到空目录，已初始化为待规划项目。")
+                manifest_path = None
+                health_status = "draft"
+            else:
+                raise FileNotFoundError(
+                    f"目录中未找到 sprout bundle，且目录非空，无法按空项目导入：{canonical_root}"
+                )
+        else:
+            manifest_path = self._find_optional_file(canonical_root / "manifest", "*_manifest.json")
+            bundle = self._get_project_store().load_bundle(bundle_path)
+            health_status = "ready" if manifest_path else "bundle_only"
+            if manifest_path is None:
+                notes.append("缺少 manifest 文件，已按 bundle 导入。")
 
         project_id = f"sprout_{slugify_name(bundle.project_name, default_prefix='project')}"
         display_name = bundle.episode.title or bundle.project_name
         cover_asset_path = self._pick_cover_asset_path(bundle)
-        health_status = "ready" if manifest_path else "bundle_only"
-        notes: list[str] = []
-        if manifest_path is None:
-            notes.append("缺少 manifest 文件，已按 bundle 导入。")
 
         return SproutImportedProjectRecord(
             project_id=project_id,
@@ -124,6 +136,39 @@ class SproutProjectAdapter:
             return Path(self.managed_projects_root).expanduser()
         repo_root = Path(__file__).resolve().parents[3]
         return repo_root / "data" / "sprout" / "projects"
+
+    def _bootstrap_empty_project(self, project_root: Path) -> tuple[Path, SproutProjectBundle]:
+        display_title = project_root.name.strip() or "未命名项目"
+        project_name = slugify_name(display_title, default_prefix="sprout_project")
+        topic_input = SproutTopicInput(topic="")
+        bundle = SproutProjectBundle(
+            project_id=f"{project_name}_bundle",
+            project_name=project_name,
+            topic_input=topic_input,
+            episode=SproutEpisode(
+                episode_id=f"{project_name}_episode_01",
+                title=display_title,
+                total_duration_seconds=topic_input.duration_seconds,
+                target_shot_count=topic_input.shot_count,
+            ),
+            notes=[EMPTY_PROJECT_PLACEHOLDER_NOTE],
+        )
+        bundle.ensure_manifest(output_root=str(project_root))
+        if bundle.manifest is not None:
+            bundle.manifest.status = "draft"
+            bundle.manifest.notes.append("空目录初始化，等待用户输入节点生成规划。")
+        bundle_path = self._get_project_store().save_bundle(bundle, output_root=project_root)
+        input_root = ensure_directory(project_root / "input")
+        write_json_file(input_root / f"{bundle.project_name}_topic_input.json", bundle.topic_input.to_dict())
+        return bundle_path, bundle
+
+    @staticmethod
+    def _is_directory_empty(root: Path) -> bool:
+        try:
+            next(root.iterdir())
+        except StopIteration:
+            return True
+        return False
 
     @staticmethod
     def _find_single_file(root: Path, pattern: str) -> Path:

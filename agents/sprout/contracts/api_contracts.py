@@ -1,16 +1,20 @@
 """Sprout API 共享契约常量。"""
 
 SUPPORTED_NODE_TYPES = (
+    "user_input",
     "characters",
+    "script_storyboard",
     "prepare_shot",
     "generate_shot",
     "build_cards",
     "export",
+    "final_output",
 )
 
 API_ENDPOINTS = {
     "health": {"method": "GET", "path": "/api/health"},
     "list_projects": {"method": "GET", "path": "/api/projects"},
+    "select_directory": {"method": "POST", "path": "/api/projects/select-directory"},
     "import_project": {"method": "POST", "path": "/api/projects/import"},
     "project_detail": {"method": "GET", "path": "/api/projects/{project_id}"},
     "node_detail": {

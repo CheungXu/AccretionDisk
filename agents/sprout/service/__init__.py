@@ -1,6 +1,7 @@
 """Sprout 后端服务层。"""
 
 from .adapters import SproutProjectAdapter
+from .directory_picker import SproutDirectoryPicker
 from .http_api import SproutHttpApi
 from .http_server import run_sprout_api_server
 from .media import SproutMediaService
@@ -13,6 +14,7 @@ __all__ = [
     "SproutHttpApi",
     "SproutMediaService",
     "SproutProjectAdapter",
+    "SproutDirectoryPicker",
     "SproutProjectRegistry",
     "SproutProjectService",
     "SproutRunStore",

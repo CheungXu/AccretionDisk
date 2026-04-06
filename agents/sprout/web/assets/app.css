@@ -521,6 +521,23 @@ body.loading {
   min-height: 180px;
 }
 
+.workflow-parallel-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 148px;
+  padding: 6px 0;
+}
+
+.workflow-node-primary,
+.workflow-node-secondary {
+  min-width: 148px;
+}
+
+.workflow-node-secondary .workflow-node-icon {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(15, 23, 42, 0.9));
+}
+
 .workflow-node {
   display: flex;
   flex-direction: column;

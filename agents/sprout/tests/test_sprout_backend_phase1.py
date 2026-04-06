@@ -257,6 +257,10 @@ class SproutBackendPhase1Test(unittest.TestCase):
                 "ready",
             )
             self.assertEqual(
+                self._get_node(project_detail["nodes"], "script_storyboard:project")["status"],
+                "ready",
+            )
+            self.assertEqual(
                 self._get_node(project_detail["nodes"], "characters:project")["status"],
                 "pending",
             )
@@ -442,6 +446,10 @@ class SproutBackendPhase1Test(unittest.TestCase):
                 "ready",
             )
             self.assertEqual(
+                self._get_node(project_detail["nodes"], "script_storyboard:project")["active_version_id"],
+                user_input_version_id,
+            )
+            self.assertEqual(
                 self._get_node(project_detail["nodes"], "characters:project")["status"],
                 "generated",
             )
@@ -540,6 +548,10 @@ class SproutBackendPhase1Test(unittest.TestCase):
                 run_payload["version"]["version_id"],
             )
             self.assertEqual(
+                self._get_node(project_detail["nodes"], "script_storyboard:project")["active_version_id"],
+                run_payload["version"]["version_id"],
+            )
+            self.assertEqual(
                 self._get_node(project_detail["nodes"], "characters:project")["status"],
                 "pending",
             )
@@ -564,6 +576,10 @@ class SproutBackendPhase1Test(unittest.TestCase):
             self.assertTrue(project_detail["versions"])
             self.assertEqual(
                 self._get_node(project_detail["nodes"], "user_input:project")["status"],
+                "ready",
+            )
+            self.assertEqual(
+                self._get_node(project_detail["nodes"], "script_storyboard:project")["status"],
                 "ready",
             )
             self.assertEqual(
@@ -619,6 +635,35 @@ class SproutBackendPhase1Test(unittest.TestCase):
                 self._get_node(project_detail["nodes"], "build_cards:project")["status"],
                 "waiting",
             )
+
+    def test_script_storyboard_node_reuses_user_input_versions(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            project_root = build_importable_project(temp_root / "demo_project")
+            project_service, _, _ = self._build_services(temp_root)
+
+            imported_project = project_service.import_project(project_root, import_mode="reference")
+            project_detail = project_service.get_project_detail(imported_project["project_id"])
+            user_input_node = self._get_node(project_detail["nodes"], "user_input:project")
+            script_storyboard_node = self._get_node(project_detail["nodes"], "script_storyboard:project")
+
+            self.assertEqual(
+                script_storyboard_node["active_version_id"],
+                user_input_node["active_version_id"],
+            )
+
+            node_detail = project_service.get_node_detail(
+                imported_project["project_id"],
+                node_type="script_storyboard",
+                node_key="project",
+            )
+            self.assertTrue(node_detail["versions"])
+            self.assertEqual(
+                node_detail["versions"][0]["version_id"],
+                user_input_node["active_version_id"],
+            )
+            self.assertEqual(node_detail["node"]["payload"]["episode"]["title"], "测试项目")
+            self.assertEqual(len(node_detail["node"]["payload"]["shots"]), 1)
 
     def test_run_final_output_creates_final_video(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

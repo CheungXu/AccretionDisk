@@ -18,9 +18,13 @@ from .registry import SproutProjectRegistry
 from .runtime import SproutRunStore, SproutVersionStore
 from .types import SproutImportedProjectRecord
 from .workflow_nodes import (
+    PROJECT_NODE_KEY,
+    SCRIPT_STORYBOARD_NODE_TYPE,
     build_node_id,
+    get_node_spec,
     build_workflow_node_specs,
     get_node_type_label,
+    get_upstream_node_ids,
     is_empty_project_placeholder,
 )
 
@@ -81,6 +85,16 @@ class SproutProjectService:
         record = self._get_registry().get_project(project_id)
         bundle = self._get_project_store().load_bundle(record.bundle_path)
         versions, _ = self._load_versions_and_active_state(record, bundle=bundle)
+        if node_type == SCRIPT_STORYBOARD_NODE_TYPE:
+            source_node_type, source_node_key = self._split_node_id(
+                self._resolve_version_source_node_id(
+                    bundle,
+                    node_type=node_type,
+                    node_key=node_key or PROJECT_NODE_KEY,
+                )
+            )
+            node_type = source_node_type
+            node_key = source_node_key
         versions = [
             version
             for version in versions
@@ -107,15 +121,18 @@ class SproutProjectService:
         record = self._get_registry().get_project(project_id)
         bundle = self._get_project_store().load_bundle(record.bundle_path)
         all_versions, active_state = self._load_versions_and_active_state(record, bundle=bundle)
+        version_source_node_type, version_source_node_key = self._split_node_id(
+            self._resolve_version_source_node_id(bundle, node_type=node_type, node_key=node_key)
+        )
         versions = [
             version
             for version in all_versions
-            if version.node_type == node_type and version.node_key == node_key
+            if version.node_type == version_source_node_type and version.node_key == version_source_node_key
         ]
         runs = self._get_run_store().list_runs(
             record.canonical_root,
-            node_type=node_type,
-            node_key=node_key,
+            node_type=version_source_node_type,
+            node_key=version_source_node_key,
         )
         workflow_nodes = self._build_workflow_nodes(
             bundle=bundle,
@@ -181,6 +198,15 @@ class SproutProjectService:
                 "episode": bundle.episode.to_dict(),
                 "is_placeholder": is_empty_project_placeholder(bundle),
                 "has_planning_content": bool(bundle.characters or bundle.shots),
+            }
+
+        if node_type == SCRIPT_STORYBOARD_NODE_TYPE:
+            return {
+                "topic_input": bundle.topic_input.to_dict(),
+                "source_storyboard": bundle.source_storyboard,
+                "episode": bundle.episode.to_dict(),
+                "characters": [character.to_dict() for character in bundle.characters],
+                "shots": [shot.to_dict() for shot in bundle.shots],
             }
 
         if node_type == "characters":
@@ -283,14 +309,16 @@ class SproutProjectService:
         raw_selected_versions = active_state.get("selected_versions", {})
         selected_versions = raw_selected_versions if isinstance(raw_selected_versions, dict) else {}
         workflow_nodes: list[dict[str, Any]] = []
+        workflow_node_by_id: dict[str, dict[str, Any]] = {}
         current_dependency_versions: dict[str, str] = {}
 
         for node_spec in build_workflow_node_specs(bundle):
             node_id = node_spec["node_id"]
             node_type = node_spec["node_type"]
             node_key = node_spec["node_key"]
-            version_records = version_records_by_node.get(node_id, [])
-            active_version_id = self._normalize_active_version_id(selected_versions.get(node_id))
+            version_source_node_id = str(node_spec.get("version_source_node_id") or node_id)
+            version_records = version_records_by_node.get(version_source_node_id, [])
+            active_version_id = self._normalize_active_version_id(selected_versions.get(version_source_node_id))
             active_version = version_by_id.get(active_version_id) if active_version_id else None
             base_status = self._get_base_status(
                 bundle,
@@ -298,14 +326,34 @@ class SproutProjectService:
                 node_type=node_type,
                 node_key=node_key,
             )
-            upstream_node = workflow_nodes[-1] if workflow_nodes else None
+            direct_upstream_node_ids = [
+                str(item).strip()
+                for item in node_spec.get("upstream_node_ids", [])
+                if str(item).strip()
+            ]
+            direct_upstream_nodes = [
+                workflow_node_by_id[upstream_node_id]
+                for upstream_node_id in direct_upstream_node_ids
+                if upstream_node_id in workflow_node_by_id
+            ]
+            ancestor_node_ids = get_upstream_node_ids(bundle, node_type, node_key)
+            ancestor_nodes = [
+                workflow_node_by_id[ancestor_node_id]
+                for ancestor_node_id in ancestor_node_ids
+                if ancestor_node_id in workflow_node_by_id
+            ]
+            expected_dependency_versions = {
+                ancestor_node_id: current_dependency_versions[ancestor_node_id]
+                for ancestor_node_id in ancestor_node_ids
+                if ancestor_node_id in current_dependency_versions
+            }
             status, status_reason, is_current_complete, effective_version_id = self._resolve_node_status(
                 node_type=node_type,
                 base_status=base_status,
                 active_version=active_version,
-                current_dependency_versions=current_dependency_versions,
-                upstream_node=upstream_node,
-                workflow_nodes=workflow_nodes,
+                expected_dependency_versions=expected_dependency_versions,
+                direct_upstream_nodes=direct_upstream_nodes,
+                ancestor_nodes=ancestor_nodes,
                 has_versions=bool(version_records),
             )
             workflow_node = {
@@ -314,13 +362,22 @@ class SproutProjectService:
                 "status": status,
                 "status_reason": status_reason,
                 "active_version_id": active_version_id,
-                "upstream_node_id": upstream_node["node_id"] if upstream_node else None,
-                "upstream_version_id": upstream_node["effective_version_id"] if upstream_node else None,
+                "upstream_node_id": direct_upstream_node_ids[0] if direct_upstream_node_ids else None,
+                "upstream_node_ids": direct_upstream_node_ids,
+                "upstream_version_id": (
+                    direct_upstream_nodes[0]["effective_version_id"] if direct_upstream_nodes else None
+                ),
+                "upstream_version_ids": [
+                    upstream_node["effective_version_id"]
+                    for upstream_node in direct_upstream_nodes
+                    if upstream_node.get("effective_version_id")
+                ],
                 "version_ids": [version.version_id for version in version_records],
                 "is_current_complete": is_current_complete,
                 "effective_version_id": effective_version_id,
             }
             workflow_nodes.append(workflow_node)
+            workflow_node_by_id[node_id] = workflow_node
             if is_current_complete and effective_version_id:
                 current_dependency_versions[node_id] = effective_version_id
 
@@ -349,6 +406,8 @@ class SproutProjectService:
             if is_empty_project_placeholder(bundle):
                 return "pending"
             return "ready"
+        if node_type == SCRIPT_STORYBOARD_NODE_TYPE:
+            return "ready" if bundle.shots else "pending"
         if node_type == "characters":
             return (
                 "generated"
@@ -379,37 +438,41 @@ class SproutProjectService:
         node_type: str,
         base_status: str,
         active_version,
-        current_dependency_versions: dict[str, str],
-        upstream_node: dict[str, Any] | None,
-        workflow_nodes: list[dict[str, Any]],
+        expected_dependency_versions: dict[str, str],
+        direct_upstream_nodes: list[dict[str, Any]],
+        ancestor_nodes: list[dict[str, Any]],
         has_versions: bool,
     ) -> tuple[str, str, bool, str | None]:
         completed_status = self._get_completed_status(node_type=node_type, base_status=base_status)
         base_is_complete = self._is_complete_status(base_status)
 
-        if upstream_node is None:
+        if not direct_upstream_nodes:
             if active_version is not None:
                 return completed_status, "当前节点已经生成，并已设为当前激活版本。", True, active_version.version_id
             if base_is_complete:
                 return completed_status, "沿用项目当前已有结果。", True, None
             return "pending", "当前节点尚未生成。", False, None
 
-        if not upstream_node["is_current_complete"]:
+        blocked_upstream_node = next(
+            (upstream_node for upstream_node in direct_upstream_nodes if not upstream_node["is_current_complete"]),
+            None,
+        )
+        if blocked_upstream_node is not None:
             return (
                 "waiting",
-                f"等待上游节点“{upstream_node['title']}”完成后再继续。",
+                f"等待上游节点“{blocked_upstream_node['title']}”完成后再继续。",
                 False,
                 None,
             )
 
         if active_version is not None:
             dependency_version_ids = dict(active_version.dependency_version_ids)
-            if dependency_version_ids == current_dependency_versions:
+            if dependency_version_ids == expected_dependency_versions:
                 return completed_status, "当前结果与上游当前版本链一致。", True, active_version.version_id
             stale_node_title = self._find_stale_upstream_title(
                 active_version=active_version,
-                current_dependency_versions=current_dependency_versions,
-                workflow_upstream_nodes=workflow_nodes,
+                expected_dependency_versions=expected_dependency_versions,
+                workflow_upstream_nodes=ancestor_nodes,
             )
             if stale_node_title:
                 return (
@@ -420,15 +483,22 @@ class SproutProjectService:
                 )
             return "pending", "上游版本链已变化，当前节点需要重新生成。", False, None
 
-        if base_is_complete and not has_versions and not current_dependency_versions:
+        if base_is_complete and not has_versions and not expected_dependency_versions:
             return completed_status, "沿用项目当前已有结果。", True, None
 
         if base_is_complete and not has_versions:
             return "pending", "当前节点已有旧结果，但还没有和当前上游版本建立对应关系。", False, None
 
+        if len(direct_upstream_nodes) == 1:
+            return (
+                "pending",
+                f"上游节点“{direct_upstream_nodes[0]['title']}”已就绪，当前节点待执行。",
+                False,
+                None,
+            )
         return (
             "pending",
-            f"上游节点“{upstream_node['title']}”已就绪，当前节点待执行。",
+            "上游节点已就绪，当前节点待执行。",
             False,
             None,
         )
@@ -437,13 +507,13 @@ class SproutProjectService:
     def _find_stale_upstream_title(
         *,
         active_version,
-        current_dependency_versions: dict[str, str],
+        expected_dependency_versions: dict[str, str],
         workflow_upstream_nodes: list[dict[str, Any]],
     ) -> str | None:
         dependency_version_ids = dict(active_version.dependency_version_ids)
         for upstream_node in reversed(workflow_upstream_nodes):
             node_id = upstream_node["node_id"]
-            expected_version_id = current_dependency_versions.get(node_id)
+            expected_version_id = expected_dependency_versions.get(node_id)
             current_version_id = dependency_version_ids.get(node_id)
             if expected_version_id != current_version_id:
                 node_title = upstream_node.get("title")
@@ -454,6 +524,7 @@ class SproutProjectService:
     def _get_completed_status(*, node_type: str, base_status: str) -> str:
         completed_status_by_node_type = {
             "user_input": "ready",
+            SCRIPT_STORYBOARD_NODE_TYPE: "ready",
             "characters": "generated",
             "prepare_shot": "prompt_ready",
             "generate_shot": "generated",
@@ -462,6 +533,16 @@ class SproutProjectService:
             "final_output": "ready",
         }
         return completed_status_by_node_type.get(node_type, base_status or "ready")
+
+    @staticmethod
+    def _split_node_id(node_id: str) -> tuple[str, str]:
+        split_index = node_id.index(":")
+        return node_id[:split_index], node_id[split_index + 1 :]
+
+    @staticmethod
+    def _resolve_version_source_node_id(bundle, *, node_type: str, node_key: str) -> str:
+        node_spec = get_node_spec(bundle, node_type, node_key)
+        return str(node_spec.get("version_source_node_id") or node_spec["node_id"])
 
     @staticmethod
     def _is_complete_status(status: str) -> bool:

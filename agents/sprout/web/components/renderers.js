@@ -3,6 +3,7 @@ import { buildMediaUrl } from "/services/api.js";
 const NODE_TYPE_LABELS = {
   user_input: "用户输入",
   characters: "角色资产",
+  script_storyboard: "脚本分镜",
   prepare_shot: "提示词准备",
   generate_shot: "视频生成",
   build_cards: "执行卡",
@@ -68,6 +69,26 @@ function formatStatusLabel(status) {
 
 function formatNodeTypeLabel(nodeType) {
   return NODE_TYPE_LABELS[nodeType] || nodeType || "未知节点";
+}
+
+function getShotVisualDescription(shot = {}) {
+  return shot.visual_description || shot.description || "";
+}
+
+function getShotPromptText(shot = {}) {
+  return shot.video_prompt || shot.prompt || shot.keyframe_prompt || "";
+}
+
+function getShotKeyframePrompt(shot = {}) {
+  return shot.keyframe_prompt || "";
+}
+
+function getShotPreviewAssets(shots = []) {
+  return shots.flatMap((shot) =>
+    (shot.output_assets || []).filter(
+      (asset) => asset.asset_type === "shot_keyframe" || asset.asset_type === "shot_image"
+    )
+  );
 }
 
 function normalizeUserInputPayload(payload = {}) {
@@ -290,6 +311,9 @@ function collectAssetsForNode(nodeDetail, inspectedVersionDetail) {
     if (nodeDetail.node.node_type === "user_input") {
       return [];
     }
+    if (nodeDetail.node.node_type === "script_storyboard") {
+      return getShotPreviewAssets(bundle.shots || []);
+    }
     if (nodeDetail.node.node_type === "characters") {
       return (bundle.characters || []).flatMap((character) => character.reference_assets || []);
     }
@@ -309,6 +333,9 @@ function collectAssetsForNode(nodeDetail, inspectedVersionDetail) {
   const payload = nodeDetail.node.payload;
   if (nodeDetail.node.node_type === "user_input") {
     return [];
+  }
+  if (nodeDetail.node.node_type === "script_storyboard") {
+    return getShotPreviewAssets(payload.shots || []);
   }
   if (nodeDetail.node.node_type === "characters") {
     return (payload.characters || []).flatMap((character) => character.reference_assets || []);
@@ -431,6 +458,7 @@ export function renderProjectStats(projectDetail) {
 function getNodeIcon(nodeType) {
   switch (nodeType) {
     case "user_input": return "✍️";
+    case "script_storyboard": return "🧾";
     case "plan": return "📝";
     case "characters": return "🎭";
     case "prepare_shot": return "🎬";
@@ -442,38 +470,80 @@ function getNodeIcon(nodeType) {
   }
 }
 
+function renderWorkflowNodeCard(node, selectedNodeId, executingNodeId, extraClassName = "") {
+  const nodeId = `${node.node_type}:${node.node_key}`;
+  const isSelected = nodeId === selectedNodeId;
+  const isExecuting = nodeId === executingNodeId;
+  const statusClass = `status-${escapeHtml(normalizeStatus(node.status))}`;
+  return `
+    <div 
+      class="workflow-node ${isSelected ? "selected" : ""} ${isExecuting ? "executing" : ""} ${statusClass} ${extraClassName}"
+      data-action="select-node"
+      data-node-type="${escapeHtml(node.node_type)}"
+      data-node-key="${escapeHtml(node.node_key)}"
+    >
+      <div class="workflow-node-icon">${getNodeIcon(node.node_type)}</div>
+      <div class="workflow-node-label">${escapeHtml(node.title)}</div>
+      <div class="workflow-node-type">${escapeHtml(node.type_label || formatNodeTypeLabel(node.node_type))}</div>
+      <div class="workflow-node-status">${renderStatusBadge(node.status)}</div>
+    </div>
+  `;
+}
+
 export function renderWorkflowDiagram(nodes, selectedNodeId, options = {}) {
   if (!nodes?.length) {
     return `<div class="empty-state">暂无节点。</div>`;
   }
 
   const executingNodeId = options.executingNodeId || null;
-  let html = "";
-  nodes.forEach((node, index) => {
+  const userInputNode = nodes.find((node) => node.node_type === "user_input") || null;
+  const characterNode = nodes.find((node) => node.node_type === "characters") || null;
+  const scriptStoryboardNode = nodes.find((node) => node.node_type === "script_storyboard") || null;
+  const remainingNodes = nodes.filter(
+    (node) => !["user_input", "characters", "script_storyboard"].includes(node.node_type)
+  );
+
+  if (!userInputNode || (!characterNode && !scriptStoryboardNode)) {
+    let html = "";
+    nodes.forEach((node, index) => {
+      html += renderWorkflowNodeCard(node, selectedNodeId, executingNodeId);
+      if (index < nodes.length - 1) {
+        const nextNode = nodes[index + 1];
+        const nextNodeId = `${nextNode.node_type}:${nextNode.node_key}`;
+        const isNextActiveOrDone = isCompletedStatus(nextNode.status) || nextNodeId === executingNodeId;
+        html += `<div class="workflow-edge ${isNextActiveOrDone ? "active" : ""}"></div>`;
+      }
+    });
+    return html;
+  }
+
+  let html = renderWorkflowNodeCard(userInputNode, selectedNodeId, executingNodeId);
+  const parallelStageActive = Boolean(
+    (characterNode && isCompletedStatus(characterNode.status)) ||
+      (scriptStoryboardNode && isCompletedStatus(scriptStoryboardNode.status))
+  );
+  html += `<div class="workflow-edge ${parallelStageActive ? "active" : ""}"></div>`;
+  html += `<div class="workflow-parallel-stage">`;
+  if (characterNode) {
+    html += renderWorkflowNodeCard(characterNode, selectedNodeId, executingNodeId, "workflow-node-primary");
+  }
+  if (scriptStoryboardNode) {
+    html += renderWorkflowNodeCard(
+      scriptStoryboardNode,
+      selectedNodeId,
+      executingNodeId,
+      "workflow-node-secondary"
+    );
+  }
+  html += `</div>`;
+
+  remainingNodes.forEach((node, index) => {
     const nodeId = `${node.node_type}:${node.node_key}`;
-    const isSelected = nodeId === selectedNodeId;
-    const isExecuting = nodeId === executingNodeId;
-    const statusClass = `status-${escapeHtml(normalizeStatus(node.status))}`;
-
-    html += `
-      <div 
-        class="workflow-node ${isSelected ? "selected" : ""} ${isExecuting ? "executing" : ""} ${statusClass}"
-        data-action="select-node"
-        data-node-type="${escapeHtml(node.node_type)}"
-        data-node-key="${escapeHtml(node.node_key)}"
-      >
-        <div class="workflow-node-icon">${getNodeIcon(node.node_type)}</div>
-        <div class="workflow-node-label">${escapeHtml(node.title)}</div>
-        <div class="workflow-node-type">${escapeHtml(node.type_label || formatNodeTypeLabel(node.node_type))}</div>
-        <div class="workflow-node-status">${renderStatusBadge(node.status)}</div>
-      </div>
-    `;
-
-    if (index < nodes.length - 1) {
-      const nextNode = nodes[index + 1];
-      const nextNodeId = `${nextNode.node_type}:${nextNode.node_key}`;
-      const isNextActiveOrDone = isCompletedStatus(nextNode.status) || nextNodeId === executingNodeId;
-      html += `<div class="workflow-edge ${isNextActiveOrDone ? "active" : ""}"></div>`;
+    const isNodeActiveOrDone = isCompletedStatus(node.status) || nodeId === executingNodeId;
+    html += `<div class="workflow-edge ${isNodeActiveOrDone ? "active" : ""}"></div>`;
+    html += renderWorkflowNodeCard(node, selectedNodeId, executingNodeId);
+    if (index === remainingNodes.length - 1) {
+      return;
     }
   });
 
@@ -523,6 +593,13 @@ export function renderNodeSummary(nodeDetail) {
     baseItems.push({ key: "总时长", value: `${userInput.duration_seconds} 秒` });
     baseItems.push({ key: "镜头数", value: userInput.shot_count });
     baseItems.push({ key: "画幅", value: userInput.orientation || "未填写" });
+  } else if (nodeType === "script_storyboard") {
+    const shots = payload.shots || [];
+    const previewAssets = getShotPreviewAssets(shots);
+    baseItems.push({ key: "剧本标题", value: payload.episode?.title || "未命名" });
+    baseItems.push({ key: "剧情概述", value: payload.episode?.logline || "无" });
+    baseItems.push({ key: "分镜数量", value: shots.length });
+    baseItems.push({ key: "分镜图片", value: previewAssets.length });
   } else if (nodeType === "plan") {
     const episode = payload.episode || {};
     baseItems.push({ key: "标题", value: episode.title || "未命名" });
@@ -543,8 +620,11 @@ export function renderNodeSummary(nodeDetail) {
       baseItems.push({ key: "镜头标题", value: shot.title || "未命名" });
       baseItems.push({ key: "镜头状态", value: formatStatusLabel(shot.status || "pending") });
       baseItems.push({ key: "镜头时长", value: `${shot.duration_seconds || 0} 秒` });
-      if (shot.prompt) {
-        baseItems.push({ key: "Prompt", value: shot.prompt });
+      if (getShotVisualDescription(shot)) {
+        baseItems.push({ key: "画面描述", value: getShotVisualDescription(shot) });
+      }
+      if (getShotPromptText(shot)) {
+        baseItems.push({ key: "视频提示词", value: getShotPromptText(shot) });
       }
     }
   } else if (nodeType === "export") {
@@ -689,6 +769,55 @@ function renderCreativePayload(nodeType, data) {
       `;
     }
 
+    if (nodeType === "script_storyboard") {
+      const episode = data.episode || {};
+      const shots = data.shots || [];
+      const topicInput = data.topic_input || {};
+      const sourceStoryboard = data.source_storyboard || "";
+      const sourceStoryboardHtml = sourceStoryboard
+        ? `
+          <div class="payload-section">
+            <h3 class="payload-title">原始脚本文本</h3>
+            <div class="payload-text"><span class="prompt-text">${escapeHtml(sourceStoryboard)}</span></div>
+          </div>
+        `
+        : "";
+      return `
+        <div class="payload-section">
+          <h3 class="payload-title">剧情总览</h3>
+          <div class="payload-text"><strong>标题：</strong>${escapeHtml(episode.title || "未命名")}</div>
+          <div class="payload-text"><strong>一句话故事：</strong>${escapeHtml(episode.logline || "无")}</div>
+          <div class="payload-text"><strong>核心冲突：</strong>${escapeHtml(episode.core_hook || "无")}</div>
+          <div class="payload-text"><strong>视觉风格：</strong>${escapeHtml(
+            episode.visual_style || topicInput.visual_style || "未填写"
+          )}</div>
+        </div>
+        <div class="payload-section">
+          <h3 class="payload-title">分镜脚本 (${shots.length})</h3>
+          <div class="payload-grid">
+            ${shots
+              .map(
+                (shot) => `
+                  <div class="payload-card">
+                    <strong>${escapeHtml(shot.title || shot.shot_id || "未命名镜头")}</strong>
+                    <div class="payload-text"><strong>画面描述：</strong>${escapeHtml(
+                      getShotVisualDescription(shot) || "无"
+                    )}</div>
+                    <div class="payload-text"><strong>台词：</strong>${escapeHtml(shot.dialogue || "无")}</div>
+                    <div class="payload-text"><strong>镜头语言：</strong>${escapeHtml(
+                      shot.camera_language || "无"
+                    )}</div>
+                    <div class="payload-text"><strong>情绪：</strong>${escapeHtml(shot.emotion || "无")}</div>
+                  </div>
+                `
+              )
+              .join("")}
+          </div>
+        </div>
+        ${sourceStoryboardHtml}
+      `;
+    }
+
     if (nodeType === "plan") {
       const ep = data.episode || {};
       const chars = data.characters || [];
@@ -710,7 +839,7 @@ function renderCreativePayload(nodeType, data) {
         html += `<div class="payload-grid">` + chars.map(c => `
           <div class="payload-card">
             <strong>${escapeHtml(c.name)}</strong> <span class="muted">(${escapeHtml(c.character_id)})</span>
-            <p class="payload-desc">${escapeHtml(c.description || "")}</p>
+            <p class="payload-desc">${escapeHtml(c.summary || c.role || "")}</p>
           </div>
         `).join("") + `</div></div>`;
       }
@@ -720,7 +849,7 @@ function renderCreativePayload(nodeType, data) {
         html += `<div class="payload-grid">` + shots.map(s => `
           <div class="payload-card">
             <strong>${escapeHtml(s.shot_id)}</strong>
-            <p class="payload-desc">${escapeHtml(s.description || "")}</p>
+            <p class="payload-desc">${escapeHtml(getShotVisualDescription(s) || "")}</p>
           </div>
         `).join("") + `</div></div>`;
       }
@@ -733,7 +862,7 @@ function renderCreativePayload(nodeType, data) {
       html += chars.map(c => `
         <div class="payload-card">
           <h3 class="payload-title" style="border:none; padding:0; margin-bottom:8px;">${escapeHtml(c.name)} <span class="muted" style="font-size:12px; font-weight:normal;">(${escapeHtml(c.character_id)})</span></h3>
-          <div class="payload-text"><strong>设定：</strong>${escapeHtml(c.description || "无")}</div>
+          <div class="payload-text"><strong>设定：</strong>${escapeHtml(c.summary || c.role || "无")}</div>
           <div class="payload-text"><strong>外观：</strong>${escapeHtml(c.appearance || "无")}</div>
         </div>
       `).join("");
@@ -746,9 +875,18 @@ function renderCreativePayload(nodeType, data) {
       return `
         <div class="payload-section">
           <h3 class="payload-title">${escapeHtml(s.title || s.shot_id || "镜头详情")}</h3>
-          <div class="payload-text"><strong>画面描述：</strong>${escapeHtml(s.description || "无")}</div>
-          <div class="payload-text"><strong>提示词 (Prompt)：</strong><br/><span class="prompt-text">${escapeHtml(s.prompt || "无")}</span></div>
-          ${s.audio_prompt ? `<div class="payload-text"><strong>音频提示词：</strong><br/><span class="prompt-text">${escapeHtml(s.audio_prompt)}</span></div>` : ""}
+          <div class="payload-text"><strong>画面描述：</strong>${escapeHtml(
+            getShotVisualDescription(s) || "无"
+          )}</div>
+          <div class="payload-text"><strong>首帧提示词：</strong><br/><span class="prompt-text">${escapeHtml(
+            getShotKeyframePrompt(s) || "无"
+          )}</span></div>
+          <div class="payload-text"><strong>视频提示词：</strong><br/><span class="prompt-text">${escapeHtml(
+            getShotPromptText(s) || "无"
+          )}</span></div>
+          <div class="payload-text"><strong>台词：</strong>${escapeHtml(s.dialogue || "无")}</div>
+          <div class="payload-text"><strong>音效：</strong>${escapeHtml(s.sound_effects || "无")}</div>
+          <div class="payload-text"><strong>镜头语言：</strong>${escapeHtml(s.camera_language || "无")}</div>
           <div class="payload-text"><strong>时长：</strong>${escapeHtml(s.duration_seconds || 0)} 秒</div>
         </div>
       `;
@@ -856,6 +994,16 @@ export function renderNodePayload(nodeDetail, inspectedVersionDetail) {
     payloadObject = inspectedVersionDetail?.bundle
       ? extractUserInputPayloadFromBundle(inspectedVersionDetail.bundle)
       : normalizeUserInputPayload(nodeDetail.node.payload || {});
+  } else if (nodeDetail.node.node_type === "script_storyboard") {
+    payloadObject = inspectedVersionDetail?.bundle
+      ? {
+          topic_input: inspectedVersionDetail.bundle.topic_input || {},
+          source_storyboard: inspectedVersionDetail.bundle.source_storyboard || "",
+          episode: inspectedVersionDetail.bundle.episode || {},
+          characters: inspectedVersionDetail.bundle.characters || [],
+          shots: inspectedVersionDetail.bundle.shots || [],
+        }
+      : nodeDetail.node.payload || {};
   } else if (nodeDetail.node.node_type === "characters" && payloadSource.characters) {
     payloadObject = payloadSource.characters;
   } else if (nodeDetail.node.node_type === "build_cards" && payloadSource.workflow_cards) {

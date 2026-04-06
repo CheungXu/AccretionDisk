@@ -11,6 +11,7 @@ from ..core.final_output import get_existing_final_video_path
 from .types import SproutNodeVersionRecord
 from .workflow_nodes import (
     PROJECT_NODE_KEY,
+    SCRIPT_STORYBOARD_NODE_TYPE,
     build_node_id,
     build_workflow_node_specs,
     is_empty_project_placeholder,
@@ -134,6 +135,9 @@ def _collect_node_material(
     node_type: str,
     node_key: str,
 ) -> _NodeMaterial:
+    if node_type == SCRIPT_STORYBOARD_NODE_TYPE:
+        return _NodeMaterial(has_version=False, is_complete=False, created_at=None, relevant_paths=[])
+
     if node_type == "user_input":
         user_input_complete = _has_user_input_content(bundle) or not is_empty_project_placeholder(bundle)
         if is_empty_project_placeholder(bundle) and not user_input_complete:

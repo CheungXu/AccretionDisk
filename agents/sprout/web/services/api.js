@@ -23,6 +23,14 @@ export async function fetchProjects() {
   return payload.projects || [];
 }
 
+export async function pickProjectDirectory() {
+  return requestJson("/api/projects/select-directory", {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify({}),
+  });
+}
+
 export async function importProject(projectRoot, importMode) {
   return requestJson("/api/projects/import", {
     method: "POST",

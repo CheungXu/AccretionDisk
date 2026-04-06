@@ -91,7 +91,7 @@ function isWorkflowNodeComplete(status) {
 function findNextRunnableNode(projectDetail) {
   return (projectDetail?.nodes || []).find(
     (node) =>
-      node.node_type !== "final_output" &&
+      !["final_output", "script_storyboard"].includes(node.node_type) &&
       !isWorkflowNodeComplete(node.status) &&
       normalizeWorkflowStatus(node.status) !== "waiting"
   );
