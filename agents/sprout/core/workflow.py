@@ -248,6 +248,20 @@ class SproutWorkflow:
             output_root=output_root,
         )
 
+    def build_final_video(
+        self,
+        *,
+        project_bundle: SproutProjectBundle,
+        output_root: str | Path,
+    ) -> Path:
+        self._get_project_store().save_bundle(project_bundle, output_root=output_root)
+        final_video_path = self._get_exporter().build_final_video(
+            project_bundle,
+            output_root=output_root,
+        )
+        self._get_project_store().save_bundle(project_bundle, output_root=output_root)
+        return final_video_path
+
     def configure_video_model_preferences(
         self,
         *,

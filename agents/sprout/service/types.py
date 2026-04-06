@@ -36,6 +36,18 @@ def _coerce_list(value: Any) -> list[str]:
     return [normalized_value] if normalized_value else []
 
 
+def _coerce_string_dict(value: Any) -> dict[str, str]:
+    if not isinstance(value, dict):
+        return {}
+    normalized_dict: dict[str, str] = {}
+    for key, item in value.items():
+        normalized_key = str(key).strip()
+        normalized_value = str(item).strip()
+        if normalized_key and normalized_value:
+            normalized_dict[normalized_key] = normalized_value
+    return normalized_dict
+
+
 @dataclass
 class SproutImportedProjectRecord:
     """导入项目注册信息。"""
@@ -111,6 +123,7 @@ class SproutNodeVersionRecord:
     run_id: str | None = None
     asset_ids: list[str] = field(default_factory=list)
     shot_ids: list[str] = field(default_factory=list)
+    dependency_version_ids: dict[str, str] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -126,6 +139,7 @@ class SproutNodeVersionRecord:
             "run_id": self.run_id,
             "asset_ids": list(self.asset_ids),
             "shot_ids": list(self.shot_ids),
+            "dependency_version_ids": dict(self.dependency_version_ids),
             "notes": list(self.notes),
         }
 
@@ -143,6 +157,7 @@ class SproutNodeVersionRecord:
             run_id=_coerce_string(payload.get("run_id")),
             asset_ids=_coerce_list(payload.get("asset_ids")),
             shot_ids=_coerce_list(payload.get("shot_ids")),
+            dependency_version_ids=_coerce_string_dict(payload.get("dependency_version_ids")),
             notes=_coerce_list(payload.get("notes")),
         )
 

@@ -5,9 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from .final_output import (
+    collect_final_video_segment_paths,
+    get_final_video_output_path,
+    upsert_final_video_asset,
+)
 from .jimeng_packager import SproutJimengPackager
 from .schema import SproutProjectBundle
 from .utils import ensure_directory, write_json_file, write_text_file
+from .video_merger import SproutVideoMerger
 
 
 @dataclass
@@ -15,6 +21,7 @@ class SproutExporter:
     """负责导出项目清单与执行卡。"""
 
     jimeng_packager: SproutJimengPackager | None = None
+    video_merger: SproutVideoMerger | None = None
 
     def export_bundle(
         self,
@@ -55,6 +62,32 @@ class SproutExporter:
             )
         return exported_paths
 
+    def build_final_video(
+        self,
+        project_bundle: SproutProjectBundle,
+        *,
+        output_root: str | Path,
+    ) -> Path:
+        """将所有镜头视频按顺序合成为最终成片。"""
+
+        output_root_path = ensure_directory(output_root)
+        segment_paths = collect_final_video_segment_paths(project_bundle)
+        final_video_path = get_final_video_output_path(output_root_path, project_bundle.project_name)
+        resolution_report = self._get_video_merger().build_merge_plan(segment_paths)
+        self._get_video_merger().merge_videos(
+            segment_paths,
+            final_video_path,
+            merge_plan=resolution_report,
+        )
+        upsert_final_video_asset(
+            project_bundle,
+            final_video_path=final_video_path,
+            segment_count=len(segment_paths),
+            resolution_report=resolution_report,
+        )
+        project_bundle.ensure_manifest(output_root=str(output_root_path))
+        return final_video_path
+
     def render_project_summary(self, project_bundle: SproutProjectBundle) -> str:
         character_lines = "\n".join(
             f"- `{character.character_id}`：{character.name}，{character.summary or character.role or '待补充'}"
@@ -94,3 +127,8 @@ class SproutExporter:
         if self.jimeng_packager is None:
             self.jimeng_packager = SproutJimengPackager()
         return self.jimeng_packager
+
+    def _get_video_merger(self) -> SproutVideoMerger:
+        if self.video_merger is None:
+            self.video_merger = SproutVideoMerger()
+        return self.video_merger

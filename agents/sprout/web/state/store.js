@@ -6,6 +6,9 @@ const state = {
   nodeDetail: null,
   inspectedVersionDetail: null,
   selectedRunDetail: null,
+  executingNodeId: null,
+  executingNodeTitle: "",
+  workflowRunning: false,
   loading: false,
 };
 

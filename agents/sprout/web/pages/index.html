@@ -24,13 +24,10 @@
           <form id="import-form" class="stack-form">
             <label class="field">
               <span>项目目录</span>
-              <input
-                id="project-root-input"
-                name="project_root"
-                type="text"
-                placeholder="例如：/Users/me/.../data/sprout/node_test_case"
-                required
-              />
+              <div id="project-root-display" class="file-picker-display">
+                点击下方按钮，通过系统目录选择器选择项目目录。
+              </div>
+              <span class="field-help">支持选择已有 `sprout` 项目目录，也支持选择空目录新建项目。</span>
             </label>
             <label class="field">
               <span>导入方式</span>
@@ -39,7 +36,7 @@
                 <option value="copy">复制到标准目录</option>
               </select>
             </label>
-            <button class="primary-button" type="submit">导入项目</button>
+            <button class="primary-button" type="submit">选择项目</button>
           </form>
         </section>
 
@@ -76,8 +73,19 @@
         <section class="stats-grid" id="project-stats"></section>
 
         <section class="panel">
-          <div class="panel-header">
-            <h2>工作流管线</h2>
+          <div class="panel-header workflow-panel-header">
+            <div class="panel-title-group">
+              <h2>工作流管线</h2>
+              <p class="panel-subtitle">点击节点可进入独立节点管理页。</p>
+            </div>
+            <div class="workflow-actions">
+              <button id="final-output-button" class="secondary-button hidden" type="button">
+                产出最终视频
+              </button>
+              <div id="workflow-execution-status" class="workflow-execution-status">
+                当前暂无执行中的节点
+              </div>
+            </div>
           </div>
           <div id="workflow-diagram" class="workflow-container empty-state">暂无节点。</div>
         </section>
@@ -89,28 +97,31 @@
             </div>
             <div id="node-summary" class="empty-state">选择节点后查看详情。</div>
             <form id="run-node-form" class="stack-form hidden" style="margin-top: 20px;">
-              <div class="form-row">
-                <label class="field">
-                  <span>来源版本</span>
-                  <select id="source-version-select" name="source_version_id">
-                    <option value="">使用当前激活版本</option>
-                  </select>
-                </label>
-                <label class="field">
-                  <span>角色补图数</span>
-                  <input
-                    id="extra-reference-input"
-                    name="extra_reference_count"
-                    type="number"
-                    value="0"
-                    min="0"
-                  />
+              <div id="standard-run-options" class="stack-form">
+                <div class="form-row">
+                  <label class="field">
+                    <span>来源版本</span>
+                    <select id="source-version-select" name="source_version_id">
+                      <option value="">使用当前激活版本</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>角色补图数</span>
+                    <input
+                      id="extra-reference-input"
+                      name="extra_reference_count"
+                      type="number"
+                      value="0"
+                      min="0"
+                    />
+                  </label>
+                </div>
+                <label class="field field-checkbox">
+                  <input id="force-run-input" name="force" type="checkbox" />
+                  <span>强制重跑，忽略已有结果</span>
                 </label>
               </div>
-              <label class="field field-checkbox">
-                <input id="force-run-input" name="force" type="checkbox" />
-                <span>强制重跑，忽略已有结果</span>
-              </label>
+              <div id="user-input-form-fields" class="stack-form hidden"></div>
               <button id="run-node-button" class="primary-button" type="submit">
                 执行当前节点
               </button>

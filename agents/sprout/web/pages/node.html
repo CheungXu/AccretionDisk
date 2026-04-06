@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sprout 节点管理</title>
+    <link rel="stylesheet" href="/assets/app.css" />
+  </head>
+  <body>
+    <div class="detail-shell">
+      <main class="main-content node-page-content">
+        <div class="detail-topbar">
+          <a id="back-to-workbench" class="ghost-button" href="/pages/index.html">
+            返回工作台
+          </a>
+        </div>
+
+        <header class="hero">
+          <div class="hero-left">
+            <p class="eyebrow">Sprout Node Studio</p>
+            <h2 id="node-title">正在加载节点...</h2>
+            <p id="node-subtitle" class="muted">请稍候，正在读取节点详情与版本关系。</p>
+            <div id="node-meta" class="meta-chips"></div>
+            <p id="node-status-hint" class="status-hint hidden"></p>
+          </div>
+        </header>
+
+        <section class="two-column-grid">
+          <section class="panel">
+            <div class="panel-header">
+              <h2>节点摘要</h2>
+            </div>
+            <div id="node-summary" class="empty-state">正在读取节点摘要。</div>
+            <form id="run-node-form" class="stack-form hidden" style="margin-top: 20px;">
+              <div id="standard-run-options" class="stack-form">
+                <div class="form-row">
+                  <label class="field">
+                    <span>来源版本</span>
+                    <select id="source-version-select" name="source_version_id">
+                      <option value="">使用当前激活版本</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>角色补图数</span>
+                    <input
+                      id="extra-reference-input"
+                      name="extra_reference_count"
+                      type="number"
+                      value="0"
+                      min="0"
+                    />
+                  </label>
+                </div>
+                <label class="field field-checkbox">
+                  <input id="force-run-input" name="force" type="checkbox" />
+                  <span>强制重跑，忽略已有结果</span>
+                </label>
+              </div>
+              <div id="user-input-form-fields" class="stack-form hidden"></div>
+              <button id="run-node-button" class="primary-button" type="submit">
+                执行当前节点
+              </button>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>版本与运行</h2>
+            </div>
+            <div id="version-list" class="stack-list empty-state">暂无版本记录。</div>
+            <div id="run-list" class="stack-list empty-state">暂无运行记录。</div>
+          </section>
+        </section>
+
+        <section class="two-column-grid">
+          <section class="panel">
+            <div class="panel-header">
+              <h2>内容载荷</h2>
+            </div>
+            <div id="node-payload" class="payload-container empty-state">暂无内容。</div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>媒体预览</h2>
+            </div>
+            <div id="media-gallery" class="media-gallery empty-state">暂无可预览媒体。</div>
+          </section>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>运行日志</h2>
+          </div>
+          <pre id="run-log" class="log-box">暂无日志。</pre>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+    <script type="module" src="/pages/node.js"></script>
+  </body>
+</html>

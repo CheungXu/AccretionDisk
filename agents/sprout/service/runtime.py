@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from ..core.final_output import find_final_video_asset
 from ..core.models import SproutProjectBundle
 from ..core.shared import (
     ensure_directory,
@@ -14,6 +15,7 @@ from ..core.shared import (
     write_json_file,
 )
 from ..core.storage import SproutProjectStore
+from .filesystem_versions import build_active_state_from_versions, infer_versions_from_project_files
 from .types import (
     SproutNodeVersionRecord,
     SproutRunRecord,
@@ -161,6 +163,7 @@ class SproutVersionStore:
         source_version_id: str | None = None,
         run_id: str | None = None,
         shot_ids: list[str] | None = None,
+        dependency_version_ids: dict[str, str] | None = None,
         notes: list[str] | None = None,
     ) -> SproutNodeVersionRecord:
         runtime_root = SproutRunStore._ensure_runtime_root(project_root)
@@ -180,6 +183,7 @@ class SproutVersionStore:
             run_id=run_id,
             asset_ids=self._collect_asset_ids(project_bundle, node_type=node_type, node_key=node_key),
             shot_ids=shot_ids or self._collect_shot_ids(project_bundle, node_type=node_type, node_key=node_key),
+            dependency_version_ids=dict(dependency_version_ids or {}),
             notes=notes or [],
         )
         self._write_version_record(project_root, version_record)
@@ -205,6 +209,32 @@ class SproutVersionStore:
                 continue
             version_records.append(version_record)
         return sorted(version_records, key=lambda item: item.created_at, reverse=True)
+
+    def bootstrap_versions_from_project_files(
+        self,
+        *,
+        project_root: str | Path,
+        project_bundle: SproutProjectBundle,
+        project_id: str,
+        bundle_path: str | Path,
+    ) -> tuple[list[SproutNodeVersionRecord], dict[str, Any]]:
+        runtime_root = SproutRunStore._ensure_runtime_root(project_root)
+        inferred_versions = infer_versions_from_project_files(
+            project_root=project_root,
+            project_id=project_id,
+            bundle=project_bundle,
+            bundle_path=bundle_path,
+        )
+        snapshot_payload = project_bundle.to_dict()
+        for version_record in inferred_versions:
+            snapshot_path = runtime_root / "version_snapshots" / f"{version_record.version_id}_bundle.json"
+            write_json_file(snapshot_path, snapshot_payload)
+            version_record.bundle_snapshot_path = str(snapshot_path)
+            self._write_version_record(project_root, version_record)
+
+        active_state = build_active_state_from_versions(inferred_versions)
+        write_json_file(self._get_active_state_path(project_root), active_state)
+        return inferred_versions, active_state
 
     def get_version(self, project_root: str | Path, version_id: str) -> SproutNodeVersionRecord:
         version_path = SproutRunStore._ensure_runtime_root(project_root) / "versions" / f"{version_id}.json"
@@ -309,6 +339,9 @@ class SproutVersionStore:
             if shot is None:
                 return []
             return [asset.asset_id for asset in shot.output_assets]
+        if node_type == "final_output":
+            final_asset = find_final_video_asset(project_bundle)
+            return [final_asset.asset_id] if final_asset is not None else []
         return [asset.asset_id for asset in project_bundle.assets]
 
     def _get_project_store(self) -> SproutProjectStore:
