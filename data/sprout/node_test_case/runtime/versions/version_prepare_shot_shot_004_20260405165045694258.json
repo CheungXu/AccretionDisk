@@ -1,0 +1,27 @@
+{
+  "version_id": "version_prepare_shot_shot_004_20260405165045694258",
+  "project_id": "sprout_sprout_node_test",
+  "node_type": "prepare_shot",
+  "node_key": "shot_004",
+  "bundle_snapshot_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/runtime/version_snapshots/version_prepare_shot_shot_004_20260405165045694258_bundle.json",
+  "source_version_id": "version_generate_shot_shot_003_20260405165020343724",
+  "status": "ready",
+  "created_at": "2026-04-05T16:50:45.694258+00:00",
+  "run_id": null,
+  "asset_ids": [],
+  "shot_ids": [],
+  "dependency_version_ids": {
+    "characters:project": "version_characters_project_20260404213624096436",
+    "prepare_shot:shot_001": "version_prepare_shot_shot_001_20260404214620427406",
+    "generate_shot:shot_001": "version_generate_shot_shot_001_20260404214715677979",
+    "prepare_shot:shot_002": "version_prepare_shot_shot_002_20260405164751239640",
+    "generate_shot:shot_002": "version_generate_shot_shot_002_20260405164846964535",
+    "prepare_shot:shot_003": "version_prepare_shot_shot_003_20260405164927697159",
+    "generate_shot:shot_003": "version_generate_shot_shot_003_20260405165020343724"
+  },
+  "notes": [
+    "source=filesystem",
+    "complete=true",
+    "path=shot_004_keyframe_01.jpg"
+  ]
+}

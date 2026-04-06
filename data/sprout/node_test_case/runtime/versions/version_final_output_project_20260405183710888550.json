@@ -1,0 +1,54 @@
+{
+  "version_id": "version_final_output_project_20260405183710888550",
+  "project_id": "sprout_sprout_node_test",
+  "node_type": "final_output",
+  "node_key": "project",
+  "bundle_snapshot_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/runtime/version_snapshots/version_final_output_project_20260405183710888550_bundle.json",
+  "source_version_id": "version_final_output_project_20260405183403079926",
+  "status": "ready",
+  "created_at": "2026-04-05T18:37:10.891380+00:00",
+  "run_id": "run_final_output_project_20260405183704616823",
+  "asset_ids": [
+    "sprout_node_test_final_video"
+  ],
+  "shot_ids": [
+    "shot_001",
+    "shot_002",
+    "shot_003",
+    "shot_004",
+    "shot_005",
+    "shot_006",
+    "shot_007",
+    "shot_008",
+    "shot_009",
+    "shot_010"
+  ],
+  "dependency_version_ids": {
+    "characters:project": "version_characters_project_20260404213624096436",
+    "prepare_shot:shot_001": "version_prepare_shot_shot_001_20260404214620427406",
+    "generate_shot:shot_001": "version_generate_shot_shot_001_20260404214715677979",
+    "prepare_shot:shot_002": "version_prepare_shot_shot_002_20260405164751239640",
+    "generate_shot:shot_002": "version_generate_shot_shot_002_20260405164846964535",
+    "prepare_shot:shot_003": "version_prepare_shot_shot_003_20260405164927697159",
+    "generate_shot:shot_003": "version_generate_shot_shot_003_20260405165020343724",
+    "prepare_shot:shot_004": "version_prepare_shot_shot_004_20260405165045694258",
+    "generate_shot:shot_004": "version_generate_shot_shot_004_20260405165136729136",
+    "prepare_shot:shot_005": "version_prepare_shot_shot_005_20260405165204625851",
+    "generate_shot:shot_005": "version_generate_shot_shot_005_20260405165306328781",
+    "prepare_shot:shot_006": "version_prepare_shot_shot_006_20260405165334022920",
+    "generate_shot:shot_006": "version_generate_shot_shot_006_20260405165437234017",
+    "prepare_shot:shot_007": "version_prepare_shot_shot_007_20260405165512835161",
+    "generate_shot:shot_007": "version_generate_shot_shot_007_20260405165626442909",
+    "prepare_shot:shot_008": "version_prepare_shot_shot_008_20260405165658632795",
+    "generate_shot:shot_008": "version_generate_shot_shot_008_20260405165745722382",
+    "prepare_shot:shot_009": "version_prepare_shot_shot_009_20260405165821467663",
+    "generate_shot:shot_009": "version_generate_shot_shot_009_20260405165935412100",
+    "prepare_shot:shot_010": "version_prepare_shot_shot_010_20260405170009210322",
+    "generate_shot:shot_010": "version_generate_shot_shot_010_20260405170112520913",
+    "build_cards:project": "version_build_cards_project_20260405164714916193",
+    "export:project": "version_export_project_20260405164714911332"
+  },
+  "notes": [
+    "force=True"
+  ]
+}

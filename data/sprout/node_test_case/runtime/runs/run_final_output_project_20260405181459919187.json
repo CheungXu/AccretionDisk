@@ -1,0 +1,14 @@
+{
+  "run_id": "run_final_output_project_20260405181459919187",
+  "project_id": "sprout_sprout_node_test",
+  "node_type": "final_output",
+  "node_key": "project",
+  "log_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/runtime/logs/run_final_output_project_20260405181459919187.log",
+  "status": "success",
+  "created_at": "2026-04-05T18:14:59.919209+00:00",
+  "updated_at": "2026-04-05T18:15:40.945837+00:00",
+  "source_version_id": "version_generate_shot_shot_010_20260405170112520913",
+  "result_version_id": "version_final_output_project_20260405181540940858",
+  "shot_ids": [],
+  "error_message": null
+}

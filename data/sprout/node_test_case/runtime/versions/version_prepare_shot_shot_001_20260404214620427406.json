@@ -1,0 +1,21 @@
+{
+  "version_id": "version_prepare_shot_shot_001_20260404214620427406",
+  "project_id": "sprout_sprout_node_test",
+  "node_type": "prepare_shot",
+  "node_key": "shot_001",
+  "bundle_snapshot_path": "/Users/texzhang/Documents/GitHub/AccretionDisk/data/sprout/node_test_case/runtime/version_snapshots/version_prepare_shot_shot_001_20260404214620427406_bundle.json",
+  "source_version_id": "version_characters_project_20260404213624096436",
+  "status": "ready",
+  "created_at": "2026-04-04T21:46:20.427406+00:00",
+  "run_id": null,
+  "asset_ids": [],
+  "shot_ids": [],
+  "dependency_version_ids": {
+    "characters:project": "version_characters_project_20260404213624096436"
+  },
+  "notes": [
+    "source=filesystem",
+    "complete=true",
+    "path=shot_001_keyframe_01.jpg"
+  ]
+}
