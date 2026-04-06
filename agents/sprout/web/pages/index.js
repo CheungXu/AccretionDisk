@@ -478,15 +478,24 @@ async function handleActionClick(event) {
     if (!state.selectedProjectId) {
       return;
     }
-    window.open(
-      buildNodePageUrl(
-        state.selectedProjectId,
-        target.dataset.nodeType,
-        target.dataset.nodeKey
-      ),
-      "_blank",
-      "noopener"
+    
+    // If the user is holding modifier keys (Cmd/Ctrl) or using middle click, 
+    // let the browser handle it natively (open in new tab)
+    if (event.metaKey || event.ctrlKey || event.button === 1) {
+      return;
+    }
+    
+    // Otherwise, prevent default navigation and do an in-page transition
+    event.preventDefault();
+    await loadNodeDetail(
+      state.selectedProjectId,
+      target.dataset.nodeType,
+      target.dataset.nodeKey
     );
+    
+    // Update URL without reloading the page
+    const url = new URL(target.href);
+    window.history.pushState({}, "", url);
     return;
   }
 

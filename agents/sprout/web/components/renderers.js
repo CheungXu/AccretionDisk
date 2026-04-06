@@ -475,8 +475,13 @@ function renderWorkflowNodeCard(node, selectedNodeId, executingNodeId, extraClas
   const isSelected = nodeId === selectedNodeId;
   const isExecuting = nodeId === executingNodeId;
   const statusClass = `status-${escapeHtml(normalizeStatus(node.status))}`;
+  
+  // Use a standard link to support native browser behaviors (like Cmd/Ctrl + Click for new tab)
+  const url = `/pages/node.html?project_id=${encodeURIComponent(getState().selectedProjectId)}&node_type=${encodeURIComponent(node.node_type)}&node_key=${encodeURIComponent(node.node_key)}`;
+  
   return `
-    <div 
+    <a 
+      href="${url}"
       class="workflow-node ${isSelected ? "selected" : ""} ${isExecuting ? "executing" : ""} ${statusClass} ${extraClassName}"
       data-action="select-node"
       data-node-type="${escapeHtml(node.node_type)}"
@@ -486,7 +491,7 @@ function renderWorkflowNodeCard(node, selectedNodeId, executingNodeId, extraClas
       <div class="workflow-node-label">${escapeHtml(node.title)}</div>
       <div class="workflow-node-type">${escapeHtml(node.type_label || formatNodeTypeLabel(node.node_type))}</div>
       <div class="workflow-node-status">${renderStatusBadge(node.status)}</div>
-    </div>
+    </a>
   `;
 }
 

@@ -33,7 +33,7 @@
 ## 核心实现细节
 
 - **样式重构**：`app.css` 中定义了全新的 CSS 变量体系，使用了深色模式下的渐变背景和半透明面板，提升了整体质感。
-- **管线渲染**：在 `renderers.js` 中新增 `renderWorkflowDiagram`，根据 `projectDetail.nodes` 动态生成带有连接线的节点图示。
+- **管线渲染**：在 `renderers.js` 中新增 `renderWorkflowDiagram`，根据 `projectDetail.nodes` 动态生成带有连接线的节点图示。节点采用 `<a>` 标签渲染，支持原生浏览器行为（如 Cmd/Ctrl+Click 新标签页打开）与单页无刷新切换。
 - **内容载荷定制**：新增 `renderCreativePayload` 方法，将原本枯燥的 JSON 数据转换为结构化的卡片视图（如角色设定卡片、镜头提示词高亮等）。
 - **一键启动逻辑**：在 `index.js` 中实现 `handleRunWorkflow`，遍历节点列表（跳过通常需要人工干预的 `plan` 节点），依次调用 `runNode`，并在每个节点完成后重新拉取项目详情以更新 UI。
 
