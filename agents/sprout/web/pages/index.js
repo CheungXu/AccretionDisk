@@ -314,6 +314,7 @@ async function handleImportProject(event) {
   const importMode = elements.importModeSelect.value;
   setLoadingState(true);
   try {
+    showToast("请在系统目录对话框中选择项目目录。", "info");
     const selection = await pickProjectDirectory();
     if (selection.cancelled) {
       return;

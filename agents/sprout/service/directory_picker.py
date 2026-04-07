@@ -38,7 +38,13 @@ class SproutDirectoryPicker:
         command = [
             "osascript",
             "-e",
-            'POSIX path of (choose folder with prompt "请选择 Sprout 项目目录")',
+            'tell application "Finder" to activate',
+            "-e",
+            "delay 0.1",
+            "-e",
+            'set selected_folder to choose folder with prompt "请选择 Sprout 项目目录"',
+            "-e",
+            "POSIX path of selected_folder",
         ]
         result = subprocess.run(
             command,

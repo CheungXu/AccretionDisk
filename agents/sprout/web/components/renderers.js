@@ -1,4 +1,5 @@
 import { buildMediaUrl } from "/services/api.js";
+import { getState } from "/state/store.js";
 
 const NODE_TYPE_LABELS = {
   user_input: "用户输入",
