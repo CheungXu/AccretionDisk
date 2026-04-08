@@ -1,4 +1,6 @@
 const state = {
+  sessionUser: null,
+  authChecked: false,
   projects: [],
   selectedProjectId: null,
   projectDetail: null,

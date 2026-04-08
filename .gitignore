@@ -1,3 +1,7 @@
 .DS_Store
 config/seed_key.json
+config/supabase_key.json
+config/huoshan_aksk.json
+__pycache__/
+*.py[cod]
 tmp/

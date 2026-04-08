@@ -1,11 +1,13 @@
 import {
   activateVersion,
+  fetchSession,
   fetchNodeDetail,
   fetchProjectDetail,
   fetchProjects,
   fetchRunDetail,
   fetchVersionDetail,
   importProject,
+  logout,
   pickProjectDirectory,
   runNode,
 } from "/services/api.js";
@@ -33,12 +35,14 @@ let initialRouteNodeConsumed = false;
 const elements = {
   importForm: document.getElementById("import-form"),
   projectRootDisplay: document.getElementById("project-root-display"),
+  logoutButton: document.getElementById("logout-button"),
   importModeSelect: document.getElementById("import-mode-select"),
   refreshProjectsButton: document.getElementById("refresh-projects-button"),
   projectList: document.getElementById("project-list"),
   projectTitle: document.getElementById("project-title"),
   projectSubtitle: document.getElementById("project-subtitle"),
   projectMeta: document.getElementById("project-meta"),
+  sessionUserEmail: document.getElementById("session-user-email"),
   projectStats: document.getElementById("project-stats"),
   workflowDiagram: document.getElementById("workflow-diagram"),
   nodeSummary: document.getElementById("node-summary"),
@@ -78,6 +82,16 @@ function buildNodePageUrl(projectId, nodeType, nodeKey) {
     node_key: nodeKey,
   });
   return `/pages/node.html?${query.toString()}`;
+}
+
+function redirectToLogin(nextPath = null) {
+  const targetPath = nextPath || `${window.location.pathname}${window.location.search}`;
+  const query = new URLSearchParams();
+  if (targetPath) {
+    query.set("next", targetPath);
+  }
+  const queryText = query.toString();
+  window.location.replace(queryText ? `/?${queryText}` : "/");
 }
 
 function normalizeWorkflowStatus(status) {
@@ -227,6 +241,41 @@ async function loadProjects() {
     showToast(error.message, "error");
   } finally {
     setLoadingState(false);
+  }
+}
+
+async function ensureSession() {
+  try {
+    const payload = await fetchSession();
+    setState({
+      sessionUser: payload.user || null,
+      authChecked: true,
+    });
+    return payload.user || null;
+  } catch (error) {
+    if (error.status === 401) {
+      setState({
+        sessionUser: null,
+        authChecked: true,
+      });
+      redirectToLogin();
+      return null;
+    }
+    throw error;
+  }
+}
+
+async function handleLogout() {
+  try {
+    await logout();
+  } catch (error) {
+    showToast(error.message, "error");
+  } finally {
+    setState({
+      sessionUser: null,
+      authChecked: true,
+    });
+    redirectToLogin();
   }
 }
 
@@ -570,6 +619,9 @@ function renderFinalOutputButton(state) {
 }
 
 function renderApp(state) {
+  if (elements.sessionUserEmail) {
+    elements.sessionUserEmail.textContent = state.sessionUser?.email || "未登录";
+  }
   elements.projectList.innerHTML = renderProjectList(state.projects, state.selectedProjectId);
 
   const hero = renderProjectHero(state.projectDetail);
@@ -629,6 +681,9 @@ function renderApp(state) {
 
 function bindEvents() {
   elements.importForm.addEventListener("submit", handleImportProject);
+  elements.logoutButton?.addEventListener("click", () => {
+    void handleLogout();
+  });
   elements.refreshProjectsButton.addEventListener("click", () => {
     void loadProjects();
   });
@@ -649,12 +704,20 @@ function bindEvents() {
   });
 }
 
-function main() {
+async function main() {
   setProjectRootDisplay("点击下方按钮，通过系统目录选择器选择项目目录。");
   subscribe(renderApp);
   bindEvents();
   renderApp(getState());
-  void loadProjects();
+  try {
+    const sessionUser = await ensureSession();
+    if (!sessionUser) {
+      return;
+    }
+    await loadProjects();
+  } catch (error) {
+    showToast(error.message, "error");
+  }
 }
 
-main();
+void main();

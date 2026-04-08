@@ -14,6 +14,8 @@
 
 当前工作台页面已支持：
 
+- 首页作为登录入口
+- 登录成功后进入项目管理工作台
 - 通过原生目录选择器选择项目目录
 - 支持将空目录初始化为空项目
 - 查看项目列表与项目摘要
@@ -44,3 +46,33 @@
 - `web/` 只通过 `/api/*` 与后端交互
 - `web/` 不直接读取磁盘目录
 - 业务实现统一放在 `core/` 和 `service/`，前端不依赖核心实现模块
+
+## 当前登录与路由约定
+
+- `/`：登录页
+- `/pages/index.html`：项目管理工作台
+- `/pages/node.html`：节点详情页
+
+登录态策略：
+
+- 使用后端写入的 `HttpOnly Cookie`
+- 前端不直接保存 access token
+- 页面初始化时先调用 `/api/session`
+- 未登录则跳回 `/`
+
+## 云端二期说明
+
+当前数据库二期已经开始在后端层规划 Supabase 项目协作模型，包括：
+
+- 项目级 `owner / editor / viewer`
+- 项目、成员、版本、运行记录、资产元数据
+- Storage 中的图片、视频、快照和日志路径规则
+
+当前这些能力主要落在：
+
+- `agents/sprout/database_plan.md`
+- `module/database/Supabase/`
+- `agents/sprout/service/cloud_*`
+- `agents/sprout/service/auth_service.py`
+
+当前 `web/` 目录已开始通过 `/api/*` 使用登录后的云端项目数据，但前端仍不直接操作数据库或 Storage，所有数据访问继续通过后端服务层收口。

@@ -1,26 +1,33 @@
-"""Sprout 节点执行服务。"""
+"""Sprout 节点执行服务（云端版本）。"""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import os
+import tempfile
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from ..core.final_output import find_final_video_asset
-from ..core.models import SproutTopicInput
+from ..core.models import SproutAsset, SproutProjectBundle, SproutTopicInput
 from ..core.orchestration import SproutWorkflow
 from ..core.storage import SproutProjectStore
-from .registry import SproutProjectRegistry
-from .runtime import SproutRunStore, SproutVersionStore
+from .cloud_asset_store import SproutCloudAssetStore
+from .cloud_project_store import SproutCloudProjectStore
+from .cloud_run_store import SproutCloudRunStore
+from .cloud_version_store import SproutCloudVersionStore
+from .types import SproutNodeVersionRecord, SproutRunRecord, build_runtime_id, utc_now_isoformat
 from .workflow_nodes import build_node_id, get_upstream_node_ids
 
 
 @dataclass
 class SproutWorkflowService:
-    """负责执行一期后端可控节点。"""
+    """负责执行一期后端可控节点（全云端，无本地文件系统依赖）。"""
 
-    registry: SproutProjectRegistry | None = None
-    version_store: SproutVersionStore | None = None
-    run_store: SproutRunStore | None = None
+    cloud_project_store: SproutCloudProjectStore | None = None
+    cloud_version_store: SproutCloudVersionStore | None = None
+    cloud_run_store: SproutCloudRunStore | None = None
+    cloud_asset_store: SproutCloudAssetStore | None = None
     project_store: SproutProjectStore | None = None
 
     def run_node(
@@ -34,162 +41,247 @@ class SproutWorkflowService:
         extra_reference_count: int = 0,
         user_input_payload: dict[str, object] | None = None,
     ) -> dict[str, object]:
-        record = self._get_registry().get_project(project_id)
         normalized_node_type = self._normalize_node_type(node_type)
-        canonical_bundle = self._get_project_store().load_bundle(record.bundle_path)
-        version_store = self._get_version_store()
-        existing_versions = version_store.list_versions(record.canonical_root)
-        if existing_versions:
-            active_state = version_store.get_active_state(record.canonical_root)
-        else:
-            _, active_state = version_store.bootstrap_versions_from_project_files(
-                project_root=record.canonical_root,
-                project_bundle=canonical_bundle,
-                project_id=project_id,
-                bundle_path=record.bundle_path,
-            )
+
+        # ── 1. 从云端获取项目信息 ──
+        project_row = self._get_cloud_project_store().get_project_row(project_id)
+        if not isinstance(project_row, dict):
+            raise KeyError(f"未找到项目：{project_id}")
+        project_name = str(project_row.get("project_name") or "").strip()
+
+        # ── 2. 下载最新 bundle 快照 ──
+        canonical_payload = self._get_cloud_project_store().download_latest_bundle_snapshot(project_id)
+        if not isinstance(canonical_payload, dict):
+            raise ValueError(f"项目 {project_id} 尚无 bundle 快照。")
+        canonical_bundle = SproutProjectBundle.from_dict(canonical_payload)
+
+        # ── 3. 读取版本列表与激活状态 ──
+        existing_versions = self._get_cloud_version_store().list_project_versions(project_id)
+        active_state: dict[str, Any] = self._get_cloud_project_store().get_active_state(project_id)
+
+        # ── 4. 确定来源版本 ──
         upstream_node_ids = get_upstream_node_ids(canonical_bundle, normalized_node_type, node_key)
         effective_source_version_id = (
             source_version_id or self._read_active_bundle_version_id(active_state)
             if upstream_node_ids
             else None
         )
-        bundle = (
-            version_store.load_bundle_for_version(record.canonical_root, effective_source_version_id)
-            if effective_source_version_id
-            else canonical_bundle
-        )
+
+        # ── 5. 加载工作 bundle（按需从指定版本快照还原）──
+        if effective_source_version_id:
+            bundle = self._load_bundle_for_version(effective_source_version_id, project_id)
+        else:
+            bundle = canonical_bundle
+
+        # ── 6. 解析依赖版本 ──
         dependency_version_ids = self._resolve_dependency_version_ids(
             bundle=bundle,
             active_state=active_state,
-            project_root=record.canonical_root,
-            node_type=normalized_node_type,
-            node_key=node_key,
-            source_version_id=effective_source_version_id,
-        )
-        run_record = self._get_run_store().start_run(
-            project_root=record.canonical_root,
             project_id=project_id,
             node_type=normalized_node_type,
             node_key=node_key,
             source_version_id=effective_source_version_id,
-            shot_ids=[node_key] if normalized_node_type in {"prepare_shot", "generate_shot"} else None,
         )
+
+        # ── 7. 构建运行记录（内存中）──
+        run_id = build_runtime_id("run")
+        run_record = SproutRunRecord(
+            run_id=run_id,
+            project_id=project_id,
+            node_type=normalized_node_type,
+            node_key=node_key,
+            log_path="",
+            status="running",
+            source_version_id=effective_source_version_id,
+            shot_ids=[node_key] if normalized_node_type in {"prepare_shot", "generate_shot"} else [],
+        )
+        log_messages: list[str] = []
+
+        # 先写一次运行中状态
+        self._get_cloud_run_store().upsert_run_record(run_record)
+
         workflow = SproutWorkflow()
         version_notes = [f"force={force}"]
+
         try:
-            self._get_run_store().append_log(
-                project_root=record.canonical_root,
-                run_record=run_record,
-                message=f"执行节点类型：{normalized_node_type}，节点键：{node_key}。",
-            )
+            log_messages.append(f"执行节点类型：{normalized_node_type}，节点键：{node_key}。")
             if effective_source_version_id:
-                self._get_run_store().append_log(
-                    project_root=record.canonical_root,
-                    run_record=run_record,
-                    message=f"使用来源版本：{effective_source_version_id}。",
+                log_messages.append(f"使用来源版本：{effective_source_version_id}。")
+
+            # ── 8. 在临时目录中执行工作流节点 ──
+            with tempfile.TemporaryDirectory(prefix="sprout_run_") as tmp_root:
+                if normalized_node_type == "user_input":
+                    bundle, input_mode = self._plan_from_user_input(
+                        workflow=workflow,
+                        current_bundle=bundle,
+                        output_root=tmp_root,
+                        project_name=project_name or canonical_bundle.project_name,
+                        log_messages=log_messages,
+                        user_input_payload=user_input_payload,
+                    )
+                    version_notes.append(f"input_mode={input_mode}")
+                elif normalized_node_type == "characters":
+                    workflow.build_characters(
+                        project_bundle=bundle,
+                        output_root=tmp_root,
+                        extra_reference_count=extra_reference_count,
+                        skip_existing=not force,
+                    )
+                elif normalized_node_type == "prepare_shot":
+                    self._validate_shot_node_key(node_key)
+                    workflow.prepare_shots(
+                        project_bundle=bundle,
+                        output_root=tmp_root,
+                        shot_ids=[node_key],
+                    )
+                elif normalized_node_type == "generate_shot":
+                    self._validate_shot_node_key(node_key)
+                    workflow.generate_shots(
+                        project_bundle=bundle,
+                        output_root=tmp_root,
+                        shot_ids=[node_key],
+                        skip_existing=not force,
+                    )
+                elif normalized_node_type == "build_cards":
+                    workflow.build_workflow_cards(
+                        project_bundle=bundle,
+                        output_root=tmp_root,
+                    )
+                elif normalized_node_type == "export":
+                    workflow.export_bundle(
+                        project_bundle=bundle,
+                        output_root=tmp_root,
+                    )
+                elif normalized_node_type == "final_output":
+                    workflow.build_final_video(
+                        project_bundle=bundle,
+                        output_root=tmp_root,
+                    )
+                    self._append_final_output_report_log(
+                        log_messages=log_messages,
+                        project_bundle=bundle,
+                    )
+                else:
+                    raise ValueError(f"暂不支持的节点类型：{node_type}")
+
+                # ── 9. 将 bundle 保存到临时目录（用于后续上传） ──
+                self._get_project_store().save_bundle(
+                    bundle,
+                    output_root=tmp_root,
                 )
 
-            if normalized_node_type == "user_input":
-                bundle, input_mode = self._plan_from_user_input(
-                    workflow=workflow,
-                    current_bundle=bundle,
-                    output_root=record.canonical_root,
-                    project_name=canonical_bundle.project_name,
-                    run_record=run_record,
-                    project_root=record.canonical_root,
-                    user_input_payload=user_input_payload,
-                )
-                version_notes.append(f"input_mode={input_mode}")
-            elif normalized_node_type == "characters":
-                workflow.build_characters(
+                # ── 10. 上传产物资产到云端 ──
+                uploaded_asset_ids = self._upload_new_assets(
                     project_bundle=bundle,
-                    output_root=record.canonical_root,
-                    extra_reference_count=extra_reference_count,
-                    skip_existing=not force,
+                    project_id=project_id,
+                    output_root=tmp_root,
                 )
-            elif normalized_node_type == "prepare_shot":
-                self._validate_shot_node_key(node_key)
-                workflow.prepare_shots(
-                    project_bundle=bundle,
-                    output_root=record.canonical_root,
-                    shot_ids=[node_key],
-                )
-            elif normalized_node_type == "generate_shot":
-                self._validate_shot_node_key(node_key)
-                workflow.generate_shots(
-                    project_bundle=bundle,
-                    output_root=record.canonical_root,
-                    shot_ids=[node_key],
-                    skip_existing=not force,
-                )
-            elif normalized_node_type == "build_cards":
-                workflow.build_workflow_cards(
-                    project_bundle=bundle,
-                    output_root=record.canonical_root,
-                )
-            elif normalized_node_type == "export":
-                workflow.export_bundle(
-                    project_bundle=bundle,
-                    output_root=record.canonical_root,
-                )
-            elif normalized_node_type == "final_output":
-                workflow.build_final_video(
-                    project_bundle=bundle,
-                    output_root=record.canonical_root,
-                )
-                self._append_final_output_report_log(
-                    project_root=record.canonical_root,
-                    run_record=run_record,
-                    project_bundle=bundle,
-                )
-            else:
-                raise ValueError(f"暂不支持的节点类型：{node_type}")
 
-            version_record = version_store.create_version(
-                project_root=record.canonical_root,
+            # ── 11. 保存 bundle 快照到云端 ──
+            version_id = build_runtime_id("ver")
+            snapshot_row = self._get_cloud_project_store().save_bundle_snapshot(
+                project_id=project_id,
                 project_bundle=bundle,
+                snapshot_id=build_runtime_id("snapshot_bundle"),
+                snapshot_type="bundle",
+                source_version_id=effective_source_version_id,
+            )
+            snapshot_id = str(snapshot_row.get("snapshot_id") or "").strip()
+
+            # ── 12. 创建版本记录 ──
+            version_record = SproutNodeVersionRecord(
+                version_id=version_id,
                 project_id=project_id,
                 node_type=normalized_node_type,
                 node_key=node_key,
+                bundle_snapshot_path="",
                 source_version_id=effective_source_version_id,
+                status="ready",
                 run_id=run_record.run_id,
-                shot_ids=[node_key] if normalized_node_type in {"prepare_shot", "generate_shot"} else None,
+                asset_ids=uploaded_asset_ids,
+                shot_ids=[node_key] if normalized_node_type in {"prepare_shot", "generate_shot"} else [],
                 dependency_version_ids=dependency_version_ids,
                 notes=version_notes,
             )
-            active_state = version_store.activate_version(
-                project_root=record.canonical_root,
-                canonical_bundle_path=record.bundle_path,
-                version_id=version_record.version_id,
+            self._get_cloud_version_store().upsert_version_record(
+                version_record,
+                snapshot_id=snapshot_id,
             )
-            self._get_registry().touch_project(project_id)
-            self._get_run_store().finish_run(
-                project_root=record.canonical_root,
-                run_record=run_record,
-                status="success",
-                result_version_id=version_record.version_id,
-            )
+
+            # ── 13. 更新激活状态 ──
+            node_id = build_node_id(normalized_node_type, node_key)
+            selected_versions = active_state.get("selected_versions")
+            if not isinstance(selected_versions, dict):
+                selected_versions = {}
+            selected_versions[node_id] = version_id
+            active_state["selected_versions"] = selected_versions
+            active_state["active_bundle_version_id"] = version_id
+            active_state["active_bundle_snapshot_id"] = snapshot_id
+            self._get_cloud_project_store().update_active_state(project_id, active_state)
+
+            # ── 14. 完成运行记录 ──
+            run_record.status = "success"
+            run_record.result_version_id = version_id
+            run_record.updated_at = utc_now_isoformat()
+            self._get_cloud_run_store().upsert_run_record(run_record)
+
+            # ── 15. 上传运行日志 ──
+            if log_messages:
+                self._get_cloud_run_store().save_run_log(
+                    project_id=project_id,
+                    run_record=run_record,
+                    log_text="\n".join(log_messages),
+                )
+
             return {
                 "run": run_record.to_dict(),
                 "version": version_record.to_dict(),
                 "active_state": active_state,
             }
+
         except Exception as exc:
-            self._get_run_store().finish_run(
-                project_root=record.canonical_root,
-                run_record=run_record,
-                status="failed",
-                error_message=str(exc),
-            )
+            run_record.status = "failed"
+            run_record.error_message = str(exc)
+            run_record.updated_at = utc_now_isoformat()
+            self._get_cloud_run_store().upsert_run_record(run_record)
+            if log_messages:
+                log_messages.append(f"执行失败：{exc}")
+                try:
+                    self._get_cloud_run_store().save_run_log(
+                        project_id=project_id,
+                        run_record=run_record,
+                        log_text="\n".join(log_messages),
+                    )
+                except Exception:
+                    pass
             raise
+
+    # ────────────────────────────────────────────────────
+    # 云端版本加载
+    # ────────────────────────────────────────────────────
+
+    def _load_bundle_for_version(self, version_id: str, project_id: str) -> SproutProjectBundle:
+        """从云端版本行中获取 snapshot_id，下载快照并还原为 bundle。"""
+
+        version_row = self._get_cloud_version_store().get_version_row(version_id)
+        if not isinstance(version_row, dict):
+            raise KeyError(f"未找到版本：{version_id}")
+        snapshot_id = str(version_row.get("snapshot_id") or "").strip()
+        if not snapshot_id:
+            raise ValueError(f"版本 {version_id} 缺少 snapshot_id。")
+        payload = self._get_cloud_project_store().download_snapshot(snapshot_id, project_id)
+        return SproutProjectBundle.from_dict(payload)
+
+    # ────────────────────────────────────────────────────
+    # 依赖版本解析
+    # ────────────────────────────────────────────────────
 
     def _resolve_dependency_version_ids(
         self,
         *,
         bundle,
         active_state: dict[str, object],
-        project_root: str,
+        project_id: str,
         node_type: str,
         node_key: str,
         source_version_id: str | None,
@@ -215,7 +307,11 @@ class SproutWorkflowService:
             if selected_dependency_versions:
                 return selected_dependency_versions
 
-        source_version = self._get_version_store().get_version(project_root, source_version_id)
+        # 回退：从来源版本记录中提取依赖
+        source_version_row = self._get_cloud_version_store().get_version_row(source_version_id)
+        if not isinstance(source_version_row, dict):
+            return {}
+        source_version = self._get_cloud_version_store().build_version_record_from_row(source_version_row)
         dependency_version_ids = {
             dependency_node_id: dependency_version_id
             for dependency_node_id, dependency_version_id in source_version.dependency_version_ids.items()
@@ -226,11 +322,74 @@ class SproutWorkflowService:
             dependency_version_ids[source_node_id] = source_version.version_id
         return dependency_version_ids
 
+    # ────────────────────────────────────────────────────
+    # 资产上传
+    # ────────────────────────────────────────────────────
+
+    def _upload_new_assets(
+        self,
+        *,
+        project_bundle: SproutProjectBundle,
+        project_id: str,
+        output_root: str,
+    ) -> list[str]:
+        """扫描 bundle 中有本地路径的资产，上传到云端。"""
+
+        uploaded_asset_ids: list[str] = []
+        all_assets = list(project_bundle.assets)
+        for shot in project_bundle.shots:
+            all_assets.extend(shot.output_assets)
+        for character in project_bundle.characters:
+            all_assets.extend(character.reference_assets)
+
+        for asset in all_assets:
+            if not asset.path:
+                continue
+            local_path = Path(asset.path)
+            if not local_path.is_absolute():
+                local_path = Path(output_root) / local_path
+            if not local_path.is_file():
+                continue
+
+            shot_id = self._infer_shot_id_for_asset(asset, project_bundle)
+            character_id = self._infer_character_id_for_asset(asset, project_bundle)
+            try:
+                self._get_cloud_asset_store().save_asset_file(
+                    asset,
+                    project_id=project_id,
+                    file_path=local_path,
+                    shot_id=shot_id,
+                    character_id=character_id,
+                )
+                uploaded_asset_ids.append(asset.asset_id)
+            except Exception:
+                pass
+        return uploaded_asset_ids
+
+    @staticmethod
+    def _infer_shot_id_for_asset(asset: SproutAsset, bundle: SproutProjectBundle) -> str | None:
+        for shot in bundle.shots:
+            for output_asset in shot.output_assets:
+                if output_asset.asset_id == asset.asset_id:
+                    return shot.shot_id
+        return None
+
+    @staticmethod
+    def _infer_character_id_for_asset(asset: SproutAsset, bundle: SproutProjectBundle) -> str | None:
+        for character in bundle.characters:
+            for ref_asset in character.reference_assets:
+                if ref_asset.asset_id == asset.asset_id:
+                    return character.character_id
+        return None
+
+    # ────────────────────────────────────────────────────
+    # 最终成片日志
+    # ────────────────────────────────────────────────────
+
     def _append_final_output_report_log(
         self,
         *,
-        project_root: str,
-        run_record,
+        log_messages: list[str],
         project_bundle,
     ) -> None:
         final_asset = find_final_video_asset(project_bundle)
@@ -292,11 +451,11 @@ class SproutWorkflowService:
         if segment_details:
             summary_lines.append("- 片段明细：" + "；".join(segment_details))
 
-        self._get_run_store().append_log(
-            project_root=project_root,
-            run_record=run_record,
-            message="\n".join(summary_lines),
-        )
+        log_messages.append("\n".join(summary_lines))
+
+    # ────────────────────────────────────────────────────
+    # 用户输入节点
+    # ────────────────────────────────────────────────────
 
     def _plan_from_user_input(
         self,
@@ -305,8 +464,7 @@ class SproutWorkflowService:
         current_bundle,
         output_root: str,
         project_name: str,
-        run_record,
-        project_root: str,
+        log_messages: list[str],
         user_input_payload: dict[str, object] | None,
     ) -> tuple[object, str]:
         topic_input = self._build_topic_input(current_bundle, user_input_payload)
@@ -315,19 +473,11 @@ class SproutWorkflowService:
             raise ValueError("请先填写题材，或提供已有分镜内容。")
 
         input_mode = "storyboard" if storyboard_text else "topic"
-        self._get_run_store().append_log(
-            project_root=project_root,
-            run_record=run_record,
-            message=f"用户输入模式：{'已有分镜整理' if input_mode == 'storyboard' else '题材规划'}。",
-        )
-        self._get_run_store().append_log(
-            project_root=project_root,
-            run_record=run_record,
-            message=(
-                f"题材：{topic_input.topic or '未填写'}；"
-                f"镜头数：{topic_input.shot_count}；"
-                f"总时长：{topic_input.duration_seconds} 秒。"
-            ),
+        log_messages.append(f"用户输入模式：{'已有分镜整理' if input_mode == 'storyboard' else '题材规划'}。")
+        log_messages.append(
+            f"题材：{topic_input.topic or '未填写'}；"
+            f"镜头数：{topic_input.shot_count}；"
+            f"总时长：{topic_input.duration_seconds} 秒。"
         )
 
         if storyboard_text:
@@ -349,6 +499,10 @@ class SproutWorkflowService:
             ),
             input_mode,
         )
+
+    # ────────────────────────────────────────────────────
+    # 静态辅助方法
+    # ────────────────────────────────────────────────────
 
     @staticmethod
     def _read_active_bundle_version_id(active_state: dict[str, object]) -> str | None:
@@ -441,20 +595,29 @@ class SproutWorkflowService:
         if not node_key or node_key == "project":
             raise ValueError("镜头节点必须提供具体 shot_id。")
 
-    def _get_registry(self) -> SproutProjectRegistry:
-        if self.registry is None:
-            self.registry = SproutProjectRegistry()
-        return self.registry
+    # ────────────────────────────────────────────────────
+    # 懒初始化 store 访问器
+    # ────────────────────────────────────────────────────
 
-    def _get_version_store(self) -> SproutVersionStore:
-        if self.version_store is None:
-            self.version_store = SproutVersionStore()
-        return self.version_store
+    def _get_cloud_project_store(self) -> SproutCloudProjectStore:
+        if self.cloud_project_store is None:
+            self.cloud_project_store = SproutCloudProjectStore()
+        return self.cloud_project_store
 
-    def _get_run_store(self) -> SproutRunStore:
-        if self.run_store is None:
-            self.run_store = SproutRunStore()
-        return self.run_store
+    def _get_cloud_version_store(self) -> SproutCloudVersionStore:
+        if self.cloud_version_store is None:
+            self.cloud_version_store = SproutCloudVersionStore()
+        return self.cloud_version_store
+
+    def _get_cloud_run_store(self) -> SproutCloudRunStore:
+        if self.cloud_run_store is None:
+            self.cloud_run_store = SproutCloudRunStore()
+        return self.cloud_run_store
+
+    def _get_cloud_asset_store(self) -> SproutCloudAssetStore:
+        if self.cloud_asset_store is None:
+            self.cloud_asset_store = SproutCloudAssetStore()
+        return self.cloud_asset_store
 
     def _get_project_store(self) -> SproutProjectStore:
         if self.project_store is None:

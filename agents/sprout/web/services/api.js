@@ -3,7 +3,10 @@ const JSON_HEADERS = {
 };
 
 async function requestJson(path, options = {}) {
-  const response = await fetch(path, options);
+  const response = await fetch(path, {
+    credentials: "same-origin",
+    ...options,
+  });
   const contentType = response.headers.get("Content-Type") || "";
   const payload = contentType.includes("application/json")
     ? await response.json()
@@ -13,9 +16,32 @@ async function requestJson(path, options = {}) {
       typeof payload === "object" && payload && "error" in payload
         ? payload.error
         : `请求失败：${response.status}`;
-    throw new Error(errorMessage);
+    const error = new Error(errorMessage);
+    error.status = response.status;
+    error.payload = payload;
+    throw error;
   }
   return payload;
+}
+
+export async function login(email, password) {
+  return requestJson("/api/login", {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export async function logout() {
+  return requestJson("/api/logout", {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify({}),
+  });
+}
+
+export async function fetchSession() {
+  return requestJson("/api/session");
 }
 
 export async function fetchProjects() {

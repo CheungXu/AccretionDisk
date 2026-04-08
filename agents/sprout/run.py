@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .core.project_store import SproutProjectStore
 from .core.schema import SproutTopicInput
-from .service import SproutProjectService, run_sprout_api_server
+from .service import run_sprout_api_server
 from .core.workflow import SproutWorkflow
 
 
@@ -23,8 +23,6 @@ def build_argument_parser() -> argparse.ArgumentParser:
     _build_build_cards_parser(subparsers)
     _build_export_parser(subparsers)
     _build_run_all_parser(subparsers)
-    _build_import_project_parser(subparsers)
-    _build_list_projects_parser(subparsers)
     _build_serve_api_parser(subparsers)
     return parser
 
@@ -34,30 +32,7 @@ def main() -> None:
     args = parser.parse_args()
     workflow = SproutWorkflow()
     project_store = SproutProjectStore()
-    project_service = SproutProjectService()
     _configure_workflow_from_args(workflow, args)
-
-    if args.command == "import-project":
-        project_summary = project_service.import_project(
-            project_root=args.project_root,
-            import_mode=args.import_mode,
-        )
-        print("项目导入完成。")
-        print(f"项目 ID：{project_summary['project_id']}")
-        print(f"展示名称：{project_summary['display_name']}")
-        print(f"项目目录：{project_summary['canonical_root']}")
-        return
-
-    if args.command == "list-projects":
-        project_summaries = project_service.list_projects()
-        print(f"项目数：{len(project_summaries)}")
-        for project_summary in project_summaries:
-            print(
-                f"{project_summary['project_id']} | "
-                f"{project_summary['display_name']} | "
-                f"{project_summary['health_status']}"
-            )
-        return
 
     if args.command == "serve-api":
         run_sprout_api_server(host=args.host, port=args.port)
@@ -307,21 +282,6 @@ def _build_run_all_parser(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument("--single-reference-video-model", help="单图图生视频模型名")
     parser.add_argument("--multi-reference-video-model", help="多参考图视频优先模型名")
     parser.add_argument("--fallback-multi-reference-video-models", help="多参考图回退模型列表，多个用逗号分隔")
-
-
-def _build_import_project_parser(subparsers: argparse._SubParsersAction) -> None:
-    parser = subparsers.add_parser("import-project", help="导入已有 sprout 项目目录")
-    parser.add_argument("--project-root", required=True, help="待导入项目目录")
-    parser.add_argument(
-        "--import-mode",
-        default="reference",
-        choices=["reference", "copy"],
-        help="导入模式：reference 或 copy",
-    )
-
-
-def _build_list_projects_parser(subparsers: argparse._SubParsersAction) -> None:
-    subparsers.add_parser("list-projects", help="查看已导入项目")
 
 
 def _build_serve_api_parser(subparsers: argparse._SubParsersAction) -> None:

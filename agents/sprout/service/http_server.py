@@ -33,10 +33,12 @@ class _SproutApiHandler(BaseHTTPRequestHandler):
     def _handle_api_request(self) -> None:
         content_length = int(self.headers.get("Content-Length", "0") or "0")
         body = self.rfile.read(content_length) if content_length > 0 else None
+        request_headers = {key: value for key, value in self.headers.items()}
         status_code, headers, response_body = self.api.handle_request(
             method=self.command,
             raw_path=self.path,
             body=body,
+            headers=request_headers,
         )
         self.send_response(status_code)
         for key, value in headers.items():
@@ -73,7 +75,7 @@ class _SproutApiHandler(BaseHTTPRequestHandler):
         parsed_url = urlsplit(raw_path)
         relative_path = unquote(parsed_url.path).lstrip("/")
         if not relative_path:
-            relative_path = "pages/index.html"
+            relative_path = "pages/login.html"
         candidate_path = (web_root / relative_path).resolve()
         if not cls._is_relative_to(candidate_path, web_root.resolve()):
             raise FileNotFoundError("静态资源路径非法。")

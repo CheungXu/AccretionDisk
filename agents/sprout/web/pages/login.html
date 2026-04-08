@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sprout 登录</title>
+    <link rel="stylesheet" href="/assets/app.css" />
+  </head>
+  <body>
+    <main class="auth-shell">
+      <section class="auth-card">
+        <p class="eyebrow">Sprout Workbench</p>
+        <h1>登录工作台</h1>
+        <p class="muted auth-subtitle">
+          先登录，再进入项目管理页。当前项目管理与项目导入功能已切换到 Supabase 登录态模式。
+        </p>
+        <form id="login-form" class="stack-form">
+          <label class="field">
+            <span>邮箱</span>
+            <input id="login-email" name="email" type="email" placeholder="请输入邮箱" autocomplete="username" />
+          </label>
+          <label class="field">
+            <span>密码</span>
+            <input
+              id="login-password"
+              name="password"
+              type="password"
+              placeholder="请输入密码"
+              autocomplete="current-password"
+            />
+          </label>
+          <button id="login-button" class="primary-button" type="submit">登录并进入项目管理</button>
+        </form>
+        <div id="login-status" class="auth-status muted">请输入 admin 账号登录。</div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast hidden"></div>
+    <script type="module" src="/pages/login.js"></script>
+  </body>
+</html>

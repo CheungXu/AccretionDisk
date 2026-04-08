@@ -43,18 +43,37 @@ AccretionDisk/
 
 ## 当前模块重点
 
-目前已接入的基础能力主要位于 `module/api/seed/`，包括：
+目前已接入的基础能力主要位于以下两个方向：
+
+- `module/api/seed/`
+- `module/database/Supabase/`
+
+其中 `module/api/seed/` 主要包括：
 
 - 文本与多模态理解接口
 - 生图接口
 - 视频生成任务接口
 - 配置加载与本地下载能力
 
+`module/database/Supabase/` 当前主要包括：
+
+- Supabase 配置读取
+- `anon` / `service_role` 客户端初始化
+- `Auth / Session / User` 基础封装
+- 项目级最小角色模型
+- 项目域表访问与 Storage 路径工具
+- `sprout` 二期数据库结构与 RLS 参考 SQL
+
 相关说明可查看：
 
 - `module/api/seed/readme.md`
+- `module/database/Supabase/readme.md`
 - `doc/20260405/seed-api-issue-note.md`
+- `doc/20260408/supabase-python-auth-module.md`
+- `doc/20260408/supabase-sprout-phase2-design.md`
 - `wiki/seed/`
+- `wiki/supabase/`
+- `wiki/sprout/`
 
 ## 协作约定
 
@@ -72,4 +91,5 @@ AccretionDisk/
 1. `AGENTS.md`
 2. `README.md`
 3. `module/api/seed/readme.md`
-4. `doc/` 与 `wiki/` 中对应主题内容
+4. `module/database/Supabase/readme.md`
+5. `doc/` 与 `wiki/` 中对应主题内容

@@ -1,9 +1,11 @@
 import {
   activateVersion,
+  fetchSession,
   fetchNodeDetail,
   fetchProjectDetail,
   fetchRunDetail,
   fetchVersionDetail,
+  logout,
   runNode,
 } from "/services/api.js";
 import {
@@ -25,9 +27,11 @@ const route = readRoute();
 
 const elements = {
   backToWorkbench: document.getElementById("back-to-workbench"),
+  logoutButton: document.getElementById("logout-button"),
   nodeTitle: document.getElementById("node-title"),
   nodeSubtitle: document.getElementById("node-subtitle"),
   nodeMeta: document.getElementById("node-meta"),
+  sessionUserEmail: document.getElementById("session-user-email"),
   nodeStatusHint: document.getElementById("node-status-hint"),
   nodeSummary: document.getElementById("node-summary"),
   runNodeForm: document.getElementById("run-node-form"),
@@ -63,6 +67,16 @@ function buildWorkbenchUrl(projectId, nodeType, nodeKey) {
   return `/pages/index.html?${query.toString()}`;
 }
 
+function redirectToLogin(nextPath = null) {
+  const targetPath = nextPath || `${window.location.pathname}${window.location.search}`;
+  const query = new URLSearchParams();
+  if (targetPath) {
+    query.set("next", targetPath);
+  }
+  const queryText = query.toString();
+  window.location.replace(queryText ? `/?${queryText}` : "/");
+}
+
 function showToast(message, type = "info") {
   elements.toast.textContent = message;
   elements.toast.className = `toast ${type}`;
@@ -75,6 +89,41 @@ function showToast(message, type = "info") {
 function setLoadingState(isLoading) {
   setState({ loading: isLoading });
   document.body.classList.toggle("loading", isLoading);
+}
+
+async function ensureSession() {
+  try {
+    const payload = await fetchSession();
+    setState({
+      sessionUser: payload.user || null,
+      authChecked: true,
+    });
+    return payload.user || null;
+  } catch (error) {
+    if (error.status === 401) {
+      setState({
+        sessionUser: null,
+        authChecked: true,
+      });
+      redirectToLogin();
+      return null;
+    }
+    throw error;
+  }
+}
+
+async function handleLogout() {
+  try {
+    await logout();
+  } catch (error) {
+    showToast(error.message, "error");
+  } finally {
+    setState({
+      sessionUser: null,
+      authChecked: true,
+    });
+    redirectToLogin();
+  }
 }
 
 function readUserInputPayload() {
@@ -233,6 +282,9 @@ async function handleActionClick(event) {
 }
 
 function renderApp(state) {
+  if (elements.sessionUserEmail) {
+    elements.sessionUserEmail.textContent = state.sessionUser?.email || "未登录";
+  }
   const hero = renderNodeHero(state.projectDetail, state.nodeDetail);
   elements.nodeTitle.textContent = hero.title;
   elements.nodeSubtitle.textContent = hero.subtitle;
@@ -274,6 +326,9 @@ function renderApp(state) {
 }
 
 function bindEvents() {
+  elements.logoutButton?.addEventListener("click", () => {
+    void handleLogout();
+  });
   elements.runNodeForm.addEventListener("submit", handleRunNode);
   elements.versionList.addEventListener("click", (event) => {
     void handleActionClick(event);
@@ -290,7 +345,7 @@ function renderMissingRoute() {
   elements.nodeStatusHint.classList.add("hidden");
 }
 
-function main() {
+async function main() {
   subscribe(renderApp);
   bindEvents();
   renderApp(getState());
@@ -300,7 +355,15 @@ function main() {
     return;
   }
 
-  void loadNodePage(route.projectId, route.nodeType, route.nodeKey);
+  try {
+    const sessionUser = await ensureSession();
+    if (!sessionUser) {
+      return;
+    }
+    await loadNodePage(route.projectId, route.nodeType, route.nodeKey);
+  } catch (error) {
+    showToast(error.message, "error");
+  }
 }
 
-main();
+void main();

@@ -229,6 +229,77 @@ body.loading {
   accent-color: var(--primary);
 }
 
+.session-panel {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.session-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.session-value,
+.session-inline-text {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.detail-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-card {
+  width: min(100%, 520px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--panel);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow);
+  padding: 32px;
+}
+
+.auth-card h1 {
+  margin: 0 0 12px;
+}
+
+.auth-subtitle {
+  margin: 0 0 24px;
+  line-height: 1.7;
+}
+
+.auth-status {
+  margin-top: 16px;
+  min-height: 24px;
+  font-size: 14px;
+}
+
+.auth-status.error {
+  color: var(--danger);
+}
+
+.auth-status.success {
+  color: var(--success);
+}
+
 .form-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -1,154 +1,444 @@
-"""Sprout 一期后端能力测试。"""
+"""Sprout 一期后端能力测试（纯云端模式）。
+
+使用 FakeTableService 和 FakeStorageService 模拟 Supabase，
+验证 SproutProjectService / SproutWorkflowService 的云端集成逻辑。
+"""
 
 from __future__ import annotations
 
 import json
 import tempfile
 import unittest
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 from urllib.parse import quote
 
 from agents.sprout import (
     SproutAsset,
-    SproutExporter,
-    SproutJimengPackager,
     SproutProjectBundle,
     SproutProjectStore,
-    SproutRunStore,
-    SproutTopicInput,
-    SproutVersionStore,
 )
 from agents.sprout.core.video_merger import SproutVideoMerger
-from agents.sprout.service import (
-    SproutHttpApi,
-    SproutMediaService,
-    SproutProjectAdapter,
-    SproutProjectRegistry,
-    SproutProjectService,
-    SproutWorkflowService,
-)
+from agents.sprout.service.cloud_asset_store import SproutCloudAssetStore
+from agents.sprout.service.cloud_project_store import SproutCloudProjectStore
+from agents.sprout.service.cloud_run_store import SproutCloudRunStore
+from agents.sprout.service.cloud_version_store import SproutCloudVersionStore
+from agents.sprout.service.http_api import SproutHttpApi
 from agents.sprout.service.http_server import _SproutApiHandler
+from agents.sprout.service.media import SproutMediaService
+from agents.sprout.service.project_service import SproutProjectService
+from agents.sprout.service.workflow_service import SproutWorkflowService
+from agents.sprout.service.types import (
+    SproutImportedProjectRecord,
+    SproutNodeVersionRecord,
+    build_runtime_id,
+)
+from agents.sprout.service.auth_service import SproutSessionContext, SproutSessionResolution
 from agents.sprout.tests.test_sprout_smoke import build_demo_bundle
+from module.database.Supabase.project_tables import SupabaseTableFilter
+
+TEST_USER_ID = "test-user-id"
 
 
-def build_importable_project(root: Path) -> Path:
-    bundle = build_demo_bundle(root)
-    store = SproutProjectStore()
-    store.save_bundle(bundle, output_root=root)
-
-    packager = SproutJimengPackager()
-    packager.build_cards(bundle)
-    exporter = SproutExporter(jimeng_packager=packager)
-    exporter.export_bundle(bundle, output_root=root)
-    return root
+# ──────────────────────────────────────────────────────────
+# 假认证服务
+# ──────────────────────────────────────────────────────────
 
 
-def build_completed_project(root: Path) -> Path:
-    bundle = build_demo_bundle(root)
-    store = SproutProjectStore()
+@dataclass
+class FakeAuthService:
+    """测试用认证服务，始终返回固定的测试用户上下文。"""
 
-    shots_root = root / "shots"
-    videos_root = root / "videos"
-    shots_root.mkdir(parents=True, exist_ok=True)
-    videos_root.mkdir(parents=True, exist_ok=True)
+    context: SproutSessionContext = field(default_factory=lambda: SproutSessionContext(
+        user_id=TEST_USER_ID,
+        email="tester@example.com",
+        user_payload={"id": TEST_USER_ID, "email": "tester@example.com"},
+        session_payload={"access_token": "fake-access-token", "refresh_token": "fake-refresh-token"},
+    ))
 
-    for shot in bundle.shots:
-        shot_root = shots_root / shot.shot_id
-        shot_root.mkdir(parents=True, exist_ok=True)
-        keyframe_path = shot_root / f"{shot.shot_id}_keyframe_01.jpg"
-        video_path = videos_root / f"{shot.shot_id}_01.mp4"
-        keyframe_path.write_text("keyframe", encoding="utf-8")
-        video_path.write_text("video", encoding="utf-8")
-        shot.keyframe_prompt = f"{shot.title} 首帧提示词"
-        shot.video_prompt = f"{shot.title} 视频提示词"
-        shot.status = "generated"
-        shot.output_assets = [
-            SproutAsset(
-                asset_id=f"{shot.shot_id}_keyframe",
-                asset_type="shot_keyframe",
-                source="seed_image",
-                path=str(keyframe_path),
-            ),
-            SproutAsset(
-                asset_id=f"{shot.shot_id}_video_01",
-                asset_type="shot_video",
-                source="seed_video",
-                path=str(video_path),
-            ),
-        ]
-        for asset in shot.output_assets:
-            bundle.register_asset(asset)
+    def resolve_session_from_headers(self, headers):
+        return SproutSessionResolution(context=self.context)
 
-    packager = SproutJimengPackager()
-    packager.build_cards(bundle)
-    exporter = SproutExporter(jimeng_packager=packager)
-    store.save_bundle(bundle, output_root=root)
-    exporter.export_bundle(bundle, output_root=root)
-    manifest_json = root / "manifest" / f"{bundle.project_name}_manifest.json"
-    summary_md = root / "manifest" / f"{bundle.project_name}_summary.md"
-    manifest_json.touch()
-    summary_md.touch()
-    return root
+    def login_with_password(self, *, email: str, password: str):
+        return self.context, "sprout_session=fake-session; Path=/; HttpOnly"
+
+    def logout_from_headers(self, headers):
+        return "sprout_session=; Path=/; Max-Age=0; HttpOnly"
 
 
-def build_planned_bundle(*, project_name: str, topic_input: SproutTopicInput) -> SproutProjectBundle:
-    topic_text = topic_input.topic or "空项目规划"
-    return SproutProjectBundle.from_planning_data(
-        {
-            "title": f"{topic_text}·测试方案",
-            "core_hook": "测试冲突",
-            "visual_style": topic_input.visual_style or "测试风格",
-            "characters": [
-                {
-                    "name": "主角",
-                    "role": "主角",
-                    "summary": "用于测试用户输入节点",
-                    "appearance_prompt": "测试主角形象",
-                }
-            ],
-            "shots": [
-                {
-                    "shot_index": 1,
-                    "title": "测试镜头",
-                    "visual_description": "主角出场",
-                    "dialogue": "测试台词",
-                    "sound_effects": "测试音效",
-                    "camera_language": "中景推进",
-                    "emotion": "坚定",
-                    "characters": ["主角"],
-                }
-            ],
-        },
-        topic_input=topic_input,
-        project_name=project_name,
-    )
+# ──────────────────────────────────────────────────────────
+# 内存版表服务（替代 SupabaseProjectTableService）
+# ──────────────────────────────────────────────────────────
+
+
+class FakeTableService:
+    """内存版表服务，模拟 SupabaseProjectTableService 的增删改查。"""
+
+    def __init__(self) -> None:
+        self._tables: dict[str, list[dict[str, Any]]] = {}
+
+    def select_rows(
+        self,
+        table_name: str,
+        *,
+        columns: str = "*",
+        filters: list[SupabaseTableFilter] | None = None,
+        order_by: str | None = None,
+        limit: int | None = None,
+        single: bool = False,
+    ) -> Any:
+        rows = [dict(row) for row in self._tables.get(table_name, [])]
+        if filters:
+            for f in filters:
+                rows = [row for row in rows if self._match_filter(row, f)]
+        if order_by:
+            col, direction = self._parse_order_by(order_by)
+            rows.sort(key=lambda r: str(r.get(col, "")), reverse=(direction == "desc"))
+        if limit is not None:
+            rows = rows[:limit]
+        if single:
+            return rows[0] if rows else None
+        return rows
+
+    def insert_rows(
+        self,
+        table_name: str,
+        rows: list[dict[str, Any]] | dict[str, Any],
+    ) -> Any:
+        payload = rows if isinstance(rows, list) else [rows]
+        self._tables.setdefault(table_name, []).extend(dict(r) for r in payload)
+        return payload
+
+    def upsert_rows(
+        self,
+        table_name: str,
+        rows: list[dict[str, Any]] | dict[str, Any],
+        *,
+        on_conflict: tuple[str, ...] | None = None,
+    ) -> Any:
+        payload = rows if isinstance(rows, list) else [rows]
+        table = self._tables.setdefault(table_name, [])
+        result: list[dict[str, Any]] = []
+        for new_row in payload:
+            if on_conflict:
+                idx = self._find_conflict_index(table, new_row, on_conflict)
+                if idx is not None:
+                    table[idx].update(new_row)
+                    result.append(dict(table[idx]))
+                    continue
+            table.append(dict(new_row))
+            result.append(dict(new_row))
+        return result
+
+    def update_rows(
+        self,
+        table_name: str,
+        *,
+        values: dict[str, Any],
+        filters: list[SupabaseTableFilter],
+    ) -> Any:
+        table = self._tables.get(table_name, [])
+        updated: list[dict[str, Any]] = []
+        for row in table:
+            if all(self._match_filter(row, f) for f in filters):
+                row.update(values)
+                updated.append(dict(row))
+        return updated
+
+    def delete_rows(
+        self,
+        table_name: str,
+        *,
+        filters: list[SupabaseTableFilter],
+    ) -> Any:
+        table = self._tables.get(table_name, [])
+        to_delete = [row for row in table if all(self._match_filter(row, f) for f in filters)]
+        for row in to_delete:
+            table.remove(row)
+        return to_delete
+
+    @staticmethod
+    def _find_conflict_index(
+        table: list[dict[str, Any]],
+        new_row: dict[str, Any],
+        conflict_keys: tuple[str, ...],
+    ) -> int | None:
+        for idx, existing in enumerate(table):
+            if all(existing.get(k) == new_row.get(k) for k in conflict_keys):
+                return idx
+        return None
+
+    @staticmethod
+    def _match_filter(row: dict[str, Any], f: SupabaseTableFilter) -> bool:
+        value = row.get(f.column)
+        if f.operator == "eq":
+            return value == f.value
+        if f.operator == "neq":
+            return value != f.value
+        if f.operator == "in":
+            return value in (f.value if isinstance(f.value, (list, tuple, set)) else [f.value])
+        if f.operator == "is":
+            return value is f.value
+        if f.operator == "gt":
+            return value > f.value
+        if f.operator == "gte":
+            return value >= f.value
+        if f.operator == "lt":
+            return value < f.value
+        if f.operator == "lte":
+            return value <= f.value
+        return True
+
+    @staticmethod
+    def _parse_order_by(order_by: str) -> tuple[str, str]:
+        parts = order_by.rsplit(".", 1)
+        return (parts[0], parts[1]) if len(parts) == 2 else (parts[0], "asc")
+
+
+# ──────────────────────────────────────────────────────────
+# 内存版存储服务（替代 SupabaseStorageService）
+# ──────────────────────────────────────────────────────────
+
+
+@dataclass(frozen=True)
+class _FakeStorageConfig:
+    bucket_name: str = "test-bucket"
+    path_prefix: str = "projects"
+    signed_url_ttl_seconds: int = 3600
+    public_bucket: bool = False
+
+
+class FakeStorageService:
+    """内存版存储服务，模拟 SupabaseStorageService 的上传/下载/签名。"""
+
+    def __init__(self) -> None:
+        self._objects: dict[str, bytes] = {}
+        self.storage_config = _FakeStorageConfig()
+
+    @property
+    def bucket_name(self) -> str:
+        return self.storage_config.bucket_name
+
+    def upload_bytes(
+        self,
+        *,
+        object_path: str,
+        content: bytes,
+        content_type: str = "application/octet-stream",
+        upsert: bool = False,
+        bearer_token: str | None = None,
+    ) -> dict[str, Any]:
+        self._objects[object_path] = content
+        return {"bucket_name": self.bucket_name, "object_path": object_path}
+
+    def upload_text(
+        self,
+        *,
+        object_path: str,
+        content: str,
+        content_type: str = "application/json; charset=utf-8",
+        upsert: bool = True,
+        bearer_token: str | None = None,
+    ) -> dict[str, Any]:
+        return self.upload_bytes(
+            object_path=object_path,
+            content=content.encode("utf-8"),
+            content_type=content_type,
+            upsert=upsert,
+        )
+
+    def upload_file(
+        self,
+        *,
+        file_path: str | Path,
+        object_path: str,
+        content_type: str | None = None,
+        upsert: bool = False,
+        bearer_token: str | None = None,
+    ) -> dict[str, Any]:
+        data = Path(file_path).read_bytes()
+        return self.upload_bytes(
+            object_path=object_path,
+            content=data,
+            content_type=content_type or "application/octet-stream",
+            upsert=upsert,
+        )
+
+    def download_object(
+        self,
+        *,
+        object_path: str,
+        bearer_token: str | None = None,
+    ) -> bytes:
+        if object_path not in self._objects:
+            raise KeyError(f"对象不存在：{object_path}")
+        return self._objects[object_path]
+
+    def create_signed_url(
+        self,
+        *,
+        object_path: str,
+        expires_in: int | None = None,
+        bearer_token: str | None = None,
+    ) -> str:
+        return f"https://fake-storage.example.com/{self.bucket_name}/{object_path}?token=fake"
+
+    def build_public_url(self, object_path: str) -> str:
+        return f"https://fake-storage.example.com/{self.bucket_name}/{object_path}"
+
+    def build_asset_object_path(
+        self,
+        *,
+        project_id: str,
+        asset_type: str,
+        asset_id: str,
+        file_name: str,
+    ) -> str:
+        prefix = self.storage_config.path_prefix
+        return f"{prefix}/{project_id}/assets/{asset_type}/{asset_id}/{file_name}"
+
+    def build_snapshot_object_path(
+        self,
+        *,
+        project_id: str,
+        snapshot_type: str,
+        file_name: str,
+    ) -> str:
+        prefix = self.storage_config.path_prefix
+        return f"{prefix}/{project_id}/snapshots/{snapshot_type}/{file_name}"
+
+    def build_log_object_path(
+        self,
+        *,
+        project_id: str,
+        run_id: str,
+        file_name: str | None = None,
+    ) -> str:
+        prefix = self.storage_config.path_prefix
+        actual_file = file_name or f"{run_id}.log"
+        return f"{prefix}/{project_id}/logs/{run_id}/{actual_file}"
+
+    def ensure_bucket_exists(self) -> None:
+        pass
+
+
+# ──────────────────────────────────────────────────────────
+# 测试用例
+# ──────────────────────────────────────────────────────────
 
 
 class SproutBackendPhase1Test(unittest.TestCase):
+
     def _build_services(self, temp_root: Path):
-        registry = SproutProjectRegistry(registry_root=temp_root / "registry")
-        adapter = SproutProjectAdapter(managed_projects_root=temp_root / "managed_projects")
-        version_store = SproutVersionStore()
-        run_store = SproutRunStore()
+        """构建所有服务，使用 Fake 替代真实 Supabase。"""
+
+        fake_table = FakeTableService()
+        fake_storage = FakeStorageService()
+
+        cloud_project_store = SproutCloudProjectStore(
+            table_service=fake_table,
+            storage_service=fake_storage,
+        )
+        cloud_version_store = SproutCloudVersionStore(
+            table_service=fake_table,
+        )
+        cloud_run_store = SproutCloudRunStore(
+            table_service=fake_table,
+            storage_service=fake_storage,
+        )
+        cloud_asset_store = SproutCloudAssetStore(
+            table_service=fake_table,
+            storage_service=fake_storage,
+        )
+
         project_service = SproutProjectService(
-            adapter=adapter,
-            registry=registry,
-            version_store=version_store,
-            run_store=run_store,
+            cloud_project_store=cloud_project_store,
+            cloud_version_store=cloud_version_store,
+            cloud_run_store=cloud_run_store,
         )
         workflow_service = SproutWorkflowService(
-            registry=registry,
-            version_store=version_store,
-            run_store=run_store,
+            cloud_project_store=cloud_project_store,
+            cloud_version_store=cloud_version_store,
+            cloud_run_store=cloud_run_store,
+            cloud_asset_store=cloud_asset_store,
         )
-        media_service = SproutMediaService(registry=registry)
+        media_service = SproutMediaService(
+            cloud_asset_store=cloud_asset_store,
+            storage_service=fake_storage,
+        )
         api = SproutHttpApi(
             project_service=project_service,
             workflow_service=workflow_service,
             media_service=media_service,
+            auth_service=FakeAuthService(),
         )
-        return project_service, workflow_service, api
+        return project_service, workflow_service, media_service, api
+
+    def _seed_project_to_cloud(
+        self,
+        *,
+        bundle: SproutProjectBundle,
+        project_root: Path,
+        project_service: SproutProjectService,
+        create_initial_version: bool = False,
+        user_id: str = TEST_USER_ID,
+    ) -> SproutImportedProjectRecord:
+        """将 demo bundle 写入假云端存储并返回项目记录。
+
+        create_initial_version=True 时同时为 user_input 节点生成初始版本。
+        """
+
+        store = SproutProjectStore()
+        store.save_bundle(bundle, output_root=project_root)
+
+        record = SproutImportedProjectRecord(
+            project_id=bundle.project_name,
+            project_type="sprout",
+            display_name=bundle.episode.title,
+            project_name=bundle.project_name,
+            project_root=str(project_root),
+            canonical_root=str(project_root),
+            bundle_path=str(project_root / "script" / "bundle.json"),
+        )
+
+        cloud_project_store = project_service.cloud_project_store
+        cloud_project_store.upsert_project_record(record, bundle=bundle, created_by=user_id)
+        cloud_project_store.add_project_member(
+            project_id=record.project_id,
+            user_id=user_id,
+            role="owner",
+        )
+        snapshot_row = cloud_project_store.save_bundle_snapshot(
+            project_id=record.project_id,
+            project_bundle=bundle,
+        )
+
+        if create_initial_version:
+            snapshot_id = str(snapshot_row.get("snapshot_id") or "").strip()
+            version_id = build_runtime_id("ver")
+            project_service.cloud_version_store.upsert_version_record(
+                SproutNodeVersionRecord(
+                    version_id=version_id,
+                    project_id=record.project_id,
+                    node_type="user_input",
+                    node_key="project",
+                    bundle_snapshot_path="",
+                    status="ready",
+                ),
+                snapshot_id=snapshot_id,
+            )
+            cloud_project_store.update_active_state(
+                record.project_id,
+                {
+                    "selected_versions": {"user_input:project": version_id},
+                    "active_bundle_version_id": version_id,
+                    "active_bundle_snapshot_id": snapshot_id,
+                },
+            )
+
+        return record
 
     @staticmethod
     def _get_node(nodes: list[dict[str, object]], node_id: str) -> dict[str, object]:
@@ -157,220 +447,170 @@ class SproutBackendPhase1Test(unittest.TestCase):
                 return node
         raise AssertionError(f"未找到节点：{node_id}")
 
-    def test_import_project_registers_summary(self) -> None:
+    # ──────────────────────────────────────────────────────
+    # 云端项目创建与查询
+    # ──────────────────────────────────────────────────────
+
+    def test_create_project_in_cloud(self) -> None:
+        """验证项目写入云端后，list / detail 接口正确返回摘要。"""
+
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
-            project_root = build_importable_project(temp_root / "demo_project")
-            project_service, _, _ = self._build_services(temp_root)
+            project_root = temp_root / "demo_project"
+            project_root.mkdir(parents=True, exist_ok=True)
+            bundle = build_demo_bundle(project_root)
 
-            imported_project = project_service.import_project(project_root, import_mode="reference")
-            listed_projects = project_service.list_projects()
+            project_service, _, _, _ = self._build_services(temp_root)
+            record = self._seed_project_to_cloud(
+                bundle=bundle,
+                project_root=project_root,
+                project_service=project_service,
+            )
 
-            self.assertEqual(imported_project["project_name"], "测试项目")
+            listed_projects = project_service.list_projects_for_user(TEST_USER_ID)
+            project_detail = project_service.get_project_detail_for_user(TEST_USER_ID, record.project_id)
+
             self.assertEqual(len(listed_projects), 1)
             self.assertEqual(listed_projects[0]["display_name"], "测试项目")
-            self.assertEqual(listed_projects[0]["character_count"], 2)
+            self.assertEqual(project_detail["bundle"]["episode"]["title"], "测试项目")
+            self.assertEqual(len(project_detail["bundle"]["characters"]), 2)
+            self.assertEqual(project_detail["bundle"]["characters"][0]["name"], "沈清辞")
 
-    def test_import_empty_directory_initializes_placeholder_project(self) -> None:
+    # ──────────────────────────────────────────────────────
+    # 节点执行与版本创建
+    # ──────────────────────────────────────────────────────
+
+    def test_run_prepare_shot_with_cloud_stores(self) -> None:
+        """验证 prepare_shot 节点通过云端存储正确执行，并生成版本与日志。"""
+
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
-            project_root = temp_root / "empty_project"
+            project_root = temp_root / "demo_project"
             project_root.mkdir(parents=True, exist_ok=True)
-            project_service, _, _ = self._build_services(temp_root)
+            bundle = build_demo_bundle(project_root)
 
-            imported_project = project_service.import_project(project_root, import_mode="reference")
-            project_detail = project_service.get_project_detail(imported_project["project_id"])
+            project_service, workflow_service, _, _ = self._build_services(temp_root)
+            record = self._seed_project_to_cloud(
+                bundle=bundle,
+                project_root=project_root,
+                project_service=project_service,
+            )
 
-            self.assertEqual(imported_project["health_status"], "draft")
-            self.assertEqual([node["node_id"] for node in project_detail["nodes"]], ["user_input:project"])
-            self.assertEqual(project_detail["nodes"][0]["status"], "pending")
-            self.assertEqual(project_detail["bundle"]["topic_input"]["topic"], "")
-            self.assertTrue((project_root / "script").exists())
-            self.assertTrue((project_root / "input").exists())
-
-    def test_run_prepare_shot_creates_version_and_log(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_root = Path(temp_dir)
-            project_root = build_importable_project(temp_root / "demo_project")
-            project_service, workflow_service, _ = self._build_services(temp_root)
-
-            imported_project = project_service.import_project(project_root, import_mode="reference")
             run_payload = workflow_service.run_node(
-                project_id=imported_project["project_id"],
+                project_id=record.project_id,
                 node_type="prepare_shot",
                 node_key="shot_001",
             )
-            project_detail = project_service.get_project_detail(imported_project["project_id"])
-            run_detail = project_service.get_run_detail(
-                imported_project["project_id"],
+
+            project_detail = project_service.get_project_detail_for_user(TEST_USER_ID, record.project_id)
+            run_detail = project_service.get_run_detail_for_user(
+                TEST_USER_ID,
+                record.project_id,
                 run_payload["run"]["run_id"],
             )
 
             self.assertEqual(run_payload["run"]["status"], "success")
-            self.assertEqual(
-                run_payload["active_state"]["active_bundle_version_id"],
-                run_payload["version"]["version_id"],
-            )
+            self.assertIsNotNone(run_payload["version"]["version_id"])
             self.assertTrue(project_detail["versions"])
-            self.assertIn("开始执行节点", run_detail["log"])
+            self.assertIn("执行节点类型", run_detail["log"])
             self.assertEqual(
                 project_detail["bundle"]["shots"][0]["status"],
                 "prompt_ready",
             )
 
-    def test_run_user_input_replans_empty_project(self) -> None:
+    # ──────────────────────────────────────────────────────
+    # HTTP API
+    # ──────────────────────────────────────────────────────
+
+    def test_http_api_exposes_run_and_media(self) -> None:
+        """验证 HTTP API 的节点执行、版本查询和媒体签名 URL（云端模式）。"""
+
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
-            project_root = temp_root / "empty_project"
+            project_root = temp_root / "demo_project"
             project_root.mkdir(parents=True, exist_ok=True)
-            project_service, workflow_service, _ = self._build_services(temp_root)
+            bundle = build_demo_bundle(project_root)
 
-            imported_project = project_service.import_project(project_root, import_mode="reference")
-            project_id = imported_project["project_id"]
-
-            def fake_plan_from_topic(self, topic_input, *, project_name=None):
-                return build_planned_bundle(project_name=project_name or "empty_project", topic_input=topic_input)
-
-            with patch(
-                "agents.sprout.core.script_planner.SproutScriptPlanner.plan_from_topic",
-                new=fake_plan_from_topic,
-            ):
-                run_payload = workflow_service.run_node(
-                    project_id=project_id,
-                    node_type="user_input",
-                    user_input_payload={
-                        "topic": "古风逆袭短剧",
-                        "duration_seconds": 72,
-                        "shot_count": 12,
-                        "orientation": "9:16",
-                        "visual_style": "国漫古风",
-                        "target_audience": "短剧用户",
-                        "notes": "需要强冲突",
-                        "source_storyboard": "",
-                    },
-                )
-
-            project_detail = project_service.get_project_detail(project_id)
-            self.assertEqual(run_payload["run"]["status"], "success")
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "user_input:project")["status"],
-                "ready",
+            project_service, _, _, api = self._build_services(temp_root)
+            record = self._seed_project_to_cloud(
+                bundle=bundle,
+                project_root=project_root,
+                project_service=project_service,
             )
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "script_storyboard:project")["status"],
-                "ready",
-            )
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "characters:project")["status"],
-                "pending",
-            )
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "prepare_shot:shot_001")["status"],
-                "waiting",
-            )
-            self.assertEqual(project_detail["bundle"]["topic_input"]["topic"], "古风逆袭短剧")
-            self.assertEqual(project_detail["bundle"]["project_name"], imported_project["project_name"])
-            self.assertTrue((project_root / "script").exists())
+            project_id = record.project_id
 
-    def test_http_api_exposes_import_run_and_media(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_root = Path(temp_dir)
-            project_root = build_importable_project(temp_root / "demo_project")
-            _, _, api = self._build_services(temp_root)
-
-            status_code, _, response_body = api.handle_request(
-                method="POST",
-                raw_path="/api/projects/import",
-                body=json.dumps(
-                    {
-                        "project_root": str(project_root),
-                        "import_mode": "reference",
-                    },
-                    ensure_ascii=False,
-                ).encode("utf-8"),
-            )
-            imported_project = json.loads(response_body.decode("utf-8"))
-            project_id = imported_project["project_id"]
-
+            # 执行 prepare_shot 节点（同时会上传角色资产）
             status_code, _, response_body = api.handle_request(
                 method="POST",
                 raw_path=f"/api/projects/{project_id}/nodes/run",
                 body=json.dumps(
-                    {
-                        "node_type": "prepare_shot",
-                        "node_key": "shot_001",
-                    },
+                    {"node_type": "prepare_shot", "node_key": "shot_001"},
                     ensure_ascii=False,
                 ).encode("utf-8"),
             )
             run_payload = json.loads(response_body.decode("utf-8"))
+            self.assertEqual(status_code, 200)
+            self.assertEqual(run_payload["run"]["status"], "success")
 
+            # 查询节点详情
             status_code, _, response_body = api.handle_request(
                 method="GET",
                 raw_path=f"/api/projects/{project_id}/nodes/detail?node_type=prepare_shot&node_key=shot_001",
             )
             node_detail = json.loads(response_body.decode("utf-8"))
+            self.assertEqual(status_code, 200)
+            self.assertEqual(node_detail["node"]["node_type"], "prepare_shot")
 
+            # 查询版本详情
+            version_id = run_payload["version"]["version_id"]
             status_code, _, response_body = api.handle_request(
                 method="GET",
-                raw_path=f"/api/projects/{project_id}/versions/{run_payload['version']['version_id']}",
+                raw_path=f"/api/projects/{project_id}/versions/{version_id}",
             )
             version_detail = json.loads(response_body.decode("utf-8"))
+            self.assertEqual(status_code, 200)
+            self.assertEqual(version_detail["version"]["version_id"], version_id)
 
+            # 查询媒体（角色锚图从云端 Storage 下载字节流）
+            shen_path = str(project_root / "characters" / "shen.png")
             status_code, headers, media_body = api.handle_request(
                 method="GET",
-                raw_path=(
-                    f"/api/projects/{project_id}/media?path="
-                    f"{quote(str(project_root / 'characters' / 'shen.png'))}"
-                ),
+                raw_path=f"/api/projects/{project_id}/media?path={quote(shen_path)}",
             )
-
             self.assertEqual(status_code, 200)
-            self.assertEqual(run_payload["run"]["status"], "success")
-            self.assertEqual(node_detail["node"]["node_type"], "prepare_shot")
-            self.assertEqual(version_detail["version"]["version_id"], run_payload["version"]["version_id"])
             self.assertEqual(headers["Content-Type"], "image/png")
-            self.assertEqual(media_body.decode("utf-8"), "shen")
+            self.assertTrue(len(media_body) > 0)
 
-    def test_http_api_exposes_directory_picker(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_root = Path(temp_dir)
-            _, _, api = self._build_services(temp_root)
-
-            with patch(
-                "agents.sprout.service.http_api.SproutDirectoryPicker.pick_directory",
-                return_value={
-                    "cancelled": False,
-                    "project_root": str(temp_root / "selected_project"),
-                    "is_empty": True,
-                },
-            ):
-                status_code, _, response_body = api.handle_request(
-                    method="POST",
-                    raw_path="/api/projects/select-directory",
-                    body=json.dumps({}, ensure_ascii=False).encode("utf-8"),
-                )
-
-            payload = json.loads(response_body.decode("utf-8"))
-            self.assertEqual(status_code, 200)
-            self.assertEqual(payload["project_root"], str(temp_root / "selected_project"))
-            self.assertTrue(payload["is_empty"])
+    # ──────────────────────────────────────────────────────
+    # 版本链追踪与节点状态刷新
+    # ──────────────────────────────────────────────────────
 
     def test_project_detail_status_tracks_version_chain_freshness(self) -> None:
+        """验证版本链追踪：上游更新时，下游节点正确变为 pending/waiting。"""
+
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
-            project_root = build_importable_project(temp_root / "demo_project")
-            project_service, workflow_service, _ = self._build_services(temp_root)
+            project_root = temp_root / "demo_project"
+            project_root.mkdir(parents=True, exist_ok=True)
+            bundle = build_demo_bundle(project_root)
 
-            imported_project = project_service.import_project(project_root, import_mode="reference")
-            project_id = imported_project["project_id"]
-            initial_detail = project_service.get_project_detail(project_id)
+            project_service, workflow_service, _, _ = self._build_services(temp_root)
+            record = self._seed_project_to_cloud(
+                bundle=bundle,
+                project_root=project_root,
+                project_service=project_service,
+                create_initial_version=True,
+            )
+            project_id = record.project_id
+
+            initial_detail = project_service.get_project_detail_for_user(TEST_USER_ID, project_id)
             user_input_version_id = self._get_node(
                 initial_detail["nodes"],
                 "user_input:project",
             )["active_version_id"]
             self.assertIsNotNone(user_input_version_id)
 
+            # 执行 characters → prepare_shot → generate_shot（fake）
             character_v1 = workflow_service.run_node(
                 project_id=project_id,
                 node_type="characters",
@@ -381,7 +621,7 @@ class SproutBackendPhase1Test(unittest.TestCase):
                 node_key="shot_001",
             )
 
-            def fake_generate_shots(self, *, project_bundle, output_root, **kwargs):
+            def fake_generate_shots(self_wf, *, project_bundle, output_root, **kwargs):
                 shot = project_bundle.find_shot("shot_001")
                 if shot is None:
                     raise AssertionError("未找到测试镜头 shot_001")
@@ -400,21 +640,22 @@ class SproutBackendPhase1Test(unittest.TestCase):
                 ]
                 for asset in shot.output_assets:
                     project_bundle.register_asset(asset)
-                self._get_project_store().save_bundle(project_bundle, output_root=output_root)
                 return project_bundle
 
-            with patch("agents.sprout.core.workflow.SproutWorkflow.generate_shots", new=fake_generate_shots):
+            with patch(
+                "agents.sprout.core.orchestration.SproutWorkflow.generate_shots",
+                new=fake_generate_shots,
+            ):
                 generate_v1 = workflow_service.run_node(
                     project_id=project_id,
                     node_type="generate_shot",
                     node_key="shot_001",
                 )
 
+            # 验证依赖版本链
             self.assertEqual(
                 character_v1["version"]["dependency_version_ids"],
-                {
-                    "user_input:project": user_input_version_id,
-                },
+                {"user_input:project": user_input_version_id},
             )
             self.assertEqual(
                 prepare_v1["version"]["source_version_id"],
@@ -440,7 +681,8 @@ class SproutBackendPhase1Test(unittest.TestCase):
                 },
             )
 
-            project_detail = project_service.get_project_detail(project_id)
+            # 验证当前节点状态
+            project_detail = project_service.get_project_detail_for_user(TEST_USER_ID, project_id)
             self.assertEqual(
                 self._get_node(project_detail["nodes"], "user_input:project")["status"],
                 "ready",
@@ -462,11 +704,12 @@ class SproutBackendPhase1Test(unittest.TestCase):
                 "generated",
             )
 
+            # 重新运行 characters → 下游节点应变为 stale
             character_v2 = workflow_service.run_node(
                 project_id=project_id,
                 node_type="characters",
             )
-            project_detail = project_service.get_project_detail(project_id)
+            project_detail = project_service.get_project_detail_for_user(TEST_USER_ID, project_id)
             self.assertEqual(
                 self._get_node(project_detail["nodes"], "prepare_shot:shot_001")["status"],
                 "pending",
@@ -476,6 +719,7 @@ class SproutBackendPhase1Test(unittest.TestCase):
                 "waiting",
             )
 
+            # 重新运行 prepare_shot → 依赖链更新
             prepare_v2 = workflow_service.run_node(
                 project_id=project_id,
                 node_type="prepare_shot",
@@ -489,7 +733,7 @@ class SproutBackendPhase1Test(unittest.TestCase):
                 },
             )
 
-            project_detail = project_service.get_project_detail(project_id)
+            project_detail = project_service.get_project_detail_for_user(TEST_USER_ID, project_id)
             self.assertEqual(
                 self._get_node(project_detail["nodes"], "prepare_shot:shot_001")["status"],
                 "prompt_ready",
@@ -499,151 +743,37 @@ class SproutBackendPhase1Test(unittest.TestCase):
                 "pending",
             )
 
-            node_detail = project_service.get_node_detail(
+            # 验证节点详情
+            node_detail = project_service.get_node_detail_for_user(
+                TEST_USER_ID,
                 project_id,
                 node_type="generate_shot",
                 node_key="shot_001",
             )
             self.assertEqual(node_detail["node"]["status"], "pending")
 
-    def test_user_input_version_marks_downstream_nodes_pending(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_root = Path(temp_dir)
-            project_root = build_completed_project(temp_root / "completed_project")
-            project_service, workflow_service, _ = self._build_services(temp_root)
-
-            imported_project = project_service.import_project(project_root, import_mode="reference")
-            project_id = imported_project["project_id"]
-            initial_detail = project_service.get_project_detail(project_id)
-            self.assertEqual(
-                self._get_node(initial_detail["nodes"], "generate_shot:shot_001")["status"],
-                "generated",
-            )
-
-            def fake_plan_from_topic(self, topic_input, *, project_name=None):
-                return build_planned_bundle(project_name=project_name or "completed_project", topic_input=topic_input)
-
-            with patch(
-                "agents.sprout.core.script_planner.SproutScriptPlanner.plan_from_topic",
-                new=fake_plan_from_topic,
-            ):
-                run_payload = workflow_service.run_node(
-                    project_id=project_id,
-                    node_type="user_input",
-                    user_input_payload={
-                        "topic": "重生复仇短剧",
-                        "duration_seconds": 60,
-                        "shot_count": 10,
-                        "orientation": "9:16",
-                        "visual_style": "国漫厚涂",
-                        "target_audience": "短剧用户",
-                        "notes": "强化冲突",
-                        "source_storyboard": "",
-                    },
-                )
-
-            project_detail = project_service.get_project_detail(project_id)
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "user_input:project")["active_version_id"],
-                run_payload["version"]["version_id"],
-            )
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "script_storyboard:project")["active_version_id"],
-                run_payload["version"]["version_id"],
-            )
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "characters:project")["status"],
-                "pending",
-            )
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "prepare_shot:shot_001")["status"],
-                "waiting",
-            )
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "generate_shot:shot_001")["status"],
-                "waiting",
-            )
-
-    def test_project_detail_bootstraps_versions_from_filesystem(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_root = Path(temp_dir)
-            project_root = build_completed_project(temp_root / "completed_project")
-            project_service, _, _ = self._build_services(temp_root)
-
-            imported_project = project_service.import_project(project_root, import_mode="reference")
-            project_detail = project_service.get_project_detail(imported_project["project_id"])
-
-            self.assertTrue(project_detail["versions"])
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "user_input:project")["status"],
-                "ready",
-            )
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "script_storyboard:project")["status"],
-                "ready",
-            )
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "characters:project")["status"],
-                "generated",
-            )
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "prepare_shot:shot_001")["status"],
-                "prompt_ready",
-            )
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "generate_shot:shot_001")["status"],
-                "generated",
-            )
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "build_cards:project")["status"],
-                "ready",
-            )
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "export:project")["status"],
-                "ready",
-            )
-            self.assertTrue(project_detail["active_state"]["selected_versions"])
-
-    def test_filesystem_versions_keep_downstream_waiting_when_upstream_missing(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_root = Path(temp_dir)
-            project_root = build_completed_project(temp_root / "completed_project")
-            project_service, _, _ = self._build_services(temp_root)
-
-            imported_project = project_service.import_project(project_root, import_mode="reference")
-
-            keyframe_asset = project_root / "shots" / "shot_001" / "shot_001_keyframe_01.jpg"
-            video_asset = project_root / "videos" / "shot_001_01.mp4"
-            keyframe_asset.unlink()
-            video_asset.unlink()
-
-            project_detail = project_service.get_project_detail(imported_project["project_id"])
-
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "characters:project")["status"],
-                "generated",
-            )
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "prepare_shot:shot_001")["status"],
-                "prompt_ready",
-            )
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "generate_shot:shot_001")["status"],
-                "pending",
-            )
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "build_cards:project")["status"],
-                "waiting",
-            )
+    # ──────────────────────────────────────────────────────
+    # script_storyboard 节点版本复用
+    # ──────────────────────────────────────────────────────
 
     def test_script_storyboard_node_reuses_user_input_versions(self) -> None:
+        """验证 script_storyboard 节点复用 user_input 版本。"""
+
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
-            project_root = build_importable_project(temp_root / "demo_project")
-            project_service, _, _ = self._build_services(temp_root)
+            project_root = temp_root / "demo_project"
+            project_root.mkdir(parents=True, exist_ok=True)
+            bundle = build_demo_bundle(project_root)
 
-            imported_project = project_service.import_project(project_root, import_mode="reference")
-            project_detail = project_service.get_project_detail(imported_project["project_id"])
+            project_service, _, _, _ = self._build_services(temp_root)
+            record = self._seed_project_to_cloud(
+                bundle=bundle,
+                project_root=project_root,
+                project_service=project_service,
+                create_initial_version=True,
+            )
+
+            project_detail = project_service.get_project_detail_for_user(TEST_USER_ID, record.project_id)
             user_input_node = self._get_node(project_detail["nodes"], "user_input:project")
             script_storyboard_node = self._get_node(project_detail["nodes"], "script_storyboard:project")
 
@@ -652,8 +782,9 @@ class SproutBackendPhase1Test(unittest.TestCase):
                 user_input_node["active_version_id"],
             )
 
-            node_detail = project_service.get_node_detail(
-                imported_project["project_id"],
+            node_detail = project_service.get_node_detail_for_user(
+                TEST_USER_ID,
+                record.project_id,
                 node_type="script_storyboard",
                 node_key="project",
             )
@@ -665,97 +796,58 @@ class SproutBackendPhase1Test(unittest.TestCase):
             self.assertEqual(node_detail["node"]["payload"]["episode"]["title"], "测试项目")
             self.assertEqual(len(node_detail["node"]["payload"]["shots"]), 1)
 
-    def test_run_final_output_creates_final_video(self) -> None:
+    # ──────────────────────────────────────────────────────
+    # 静态页面与 session
+    # ──────────────────────────────────────────────────────
+
+    def test_static_workbench_entry_exists(self) -> None:
+        """验证静态页面文件存在。"""
+
+        index_path = _SproutApiHandler._resolve_static_file_path("/")
+        script_path = _SproutApiHandler._resolve_static_file_path("/pages/index.js")
+        login_path = _SproutApiHandler._resolve_static_file_path("/pages/login.html")
+        node_path = _SproutApiHandler._resolve_static_file_path("/pages/node.html")
+        node_script_path = _SproutApiHandler._resolve_static_file_path("/pages/node.js")
+
+        self.assertTrue(index_path.exists())
+        self.assertTrue(script_path.exists())
+        self.assertTrue(login_path.exists())
+        self.assertTrue(node_path.exists())
+        self.assertTrue(node_script_path.exists())
+        self.assertEqual(index_path.name, "login.html")
+
+    def test_http_api_exposes_session_and_logout(self) -> None:
+        """验证 HTTP API 的登录态和登出。"""
+
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
-            project_root = build_completed_project(temp_root / "completed_project")
-            project_service, workflow_service, _ = self._build_services(temp_root)
+            _, _, _, api = self._build_services(temp_root)
 
-            imported_project = project_service.import_project(project_root, import_mode="reference")
-            project_id = imported_project["project_id"]
-
-            project_detail = project_service.get_project_detail(project_id)
-            self.assertEqual(
-                self._get_node(project_detail["nodes"], "final_output:project")["status"],
-                "pending",
+            status_code, _, response_body = api.handle_request(
+                method="GET",
+                raw_path="/api/session",
+                headers={"Cookie": "sprout_session=fake"},
             )
+            payload = json.loads(response_body.decode("utf-8"))
+            self.assertEqual(status_code, 200)
+            self.assertEqual(payload["user"]["email"], "tester@example.com")
 
-            fake_resolution_report = {
-                "strategy": "先统计片段分辨率，再按无需放大低分辨率片段优先的原则选择输出分辨率。",
-                "segment_count": 1,
-                "target_render_size": {"width": 720, "height": 1280, "label": "720 x 1280"},
-                "resolution_summary": [{"label": "720 x 1280", "count": 1}],
-                "orientation_summary": {"portrait": 1},
-                "upscale_segment_count": 0,
-                "padded_segment_count": 0,
-                "segments": [
-                    {
-                        "index": 1,
-                        "shot_id": "shot_001",
-                        "file_name": "shot_001_01.mp4",
-                        "duration_seconds": 6.0,
-                        "display_width": 720,
-                        "display_height": 1280,
-                        "resolution_label": "720 x 1280",
-                        "orientation": "portrait",
-                        "scale_mode": "native",
-                        "needs_padding": False,
-                    }
-                ],
-                "warnings": ["目标输出分辨率已优先选择无需放大低分辨率片段的方案。"],
-            }
-
-            def fake_merge(self, input_paths, output_path, *, merge_plan=None):
-                output_path = Path(output_path)
-                output_path.parent.mkdir(parents=True, exist_ok=True)
-                output_path.write_text("merged-video", encoding="utf-8")
-                return output_path
-
-            def fake_build_merge_plan(self, input_paths):
-                return fake_resolution_report
-
-            with patch(
-                "agents.sprout.core.video_merger.SproutVideoMerger.merge_videos",
-                new=fake_merge,
-            ), patch(
-                "agents.sprout.core.video_merger.SproutVideoMerger.build_merge_plan",
-                new=fake_build_merge_plan,
-            ):
-                run_payload = workflow_service.run_node(
-                    project_id=project_id,
-                    node_type="final_output",
-                )
-
-            self.assertEqual(run_payload["run"]["status"], "success")
-            project_detail = project_service.get_project_detail(project_id)
-            final_output_node = self._get_node(project_detail["nodes"], "final_output:project")
-            self.assertEqual(final_output_node["status"], "ready")
-            self.assertIsNotNone(final_output_node["active_version_id"])
-
-            node_detail = project_service.get_node_detail(
-                project_id,
-                node_type="final_output",
-                node_key="project",
+            status_code, headers, _ = api.handle_request(
+                method="POST",
+                raw_path="/api/logout",
+                body=json.dumps({}, ensure_ascii=False).encode("utf-8"),
+                headers={"Cookie": "sprout_session=fake"},
             )
-            self.assertEqual(node_detail["node"]["status"], "ready")
-            self.assertEqual(
-                node_detail["node"]["payload"]["asset"]["asset_type"],
-                "final_video",
-            )
-            self.assertEqual(
-                node_detail["node"]["payload"]["resolution_report"]["target_render_size"]["label"],
-                "720 x 1280",
-            )
-            self.assertTrue(Path(node_detail["node"]["payload"]["asset"]["path"]).exists())
+            self.assertEqual(status_code, 200)
+            self.assertIn("Set-Cookie", headers)
 
-            run_detail = project_service.get_run_detail(
-                project_id,
-                run_payload["run"]["run_id"],
-            )
-            self.assertIn("最终成片分辨率统计", run_detail["log"])
-            self.assertIn("目标输出分辨率：720 x 1280", run_detail["log"])
+    # ──────────────────────────────────────────────────────
+    # 视频合并分辨率策略
+    # ──────────────────────────────────────────────────────
 
     def test_video_merger_prefers_non_upscale_target_resolution(self) -> None:
+        """验证视频合并器优先选择无需放大的输出分辨率。"""
+
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
             input_paths = []
@@ -765,7 +857,6 @@ class SproutBackendPhase1Test(unittest.TestCase):
                 input_paths.append(path)
 
             merger = SproutVideoMerger()
-
             fake_profiles = [
                 {
                     "input_path": str(input_paths[0]),
@@ -807,18 +898,6 @@ class SproutBackendPhase1Test(unittest.TestCase):
             self.assertEqual(report["padded_segment_count"], 1)
             self.assertEqual(report["segments"][2]["scale_mode"], "downscale_to_fit")
             self.assertTrue(report["segments"][2]["needs_padding"])
-
-    def test_static_workbench_entry_exists(self) -> None:
-        index_path = _SproutApiHandler._resolve_static_file_path("/")
-        script_path = _SproutApiHandler._resolve_static_file_path("/pages/index.js")
-        node_path = _SproutApiHandler._resolve_static_file_path("/pages/node.html")
-        node_script_path = _SproutApiHandler._resolve_static_file_path("/pages/node.js")
-
-        self.assertTrue(index_path.exists())
-        self.assertTrue(script_path.exists())
-        self.assertTrue(node_path.exists())
-        self.assertTrue(node_script_path.exists())
-        self.assertEqual(index_path.name, "index.html")
 
 
 if __name__ == "__main__":

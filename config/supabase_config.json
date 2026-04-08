@@ -1,0 +1,24 @@
+{
+  "project_name": "请填写项目标识",
+  "schema": "public",
+  "timeout_seconds": 300,
+  "headers": {
+    "X-Client-Info": "AccretionDisk-Supabase/1.0"
+  },
+  "auth": {
+    "persist_session": true,
+    "auto_refresh_token": true,
+    "default_email_redirect_to": ""
+  },
+  "storage": {
+    "bucket_name": "sprout-projects",
+    "path_prefix": "projects",
+    "signed_url_ttl_seconds": 3600,
+    "public_bucket": false
+  },
+  "sprout": {
+    "default_project_type": "sprout",
+    "default_member_role": "owner",
+    "phase2_enabled": true
+  }
+}
